@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Momentum Stones — Push, Collide, Score</title>
+<style>
+  :root{
+    --bg:#0f1830; --panel:#16213e; --panel2:#1d2b52; --ink:#eaf0ff;
+    --muted:#9fb0d6; --line:#2c3d6b; --accent:#ffd166;
+    --good:#2fbf57; --bad:#e6294b; --cpu:#ff5a6e;
+    --green:#3ddc84; --red:#ff5a6e; --gold:#ffc83d;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%}
+  body{background:radial-gradient(1200px 700px at 70% -10%, #1a2a52 0%, var(--bg) 55%);
+    color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+  header{display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#1a2748,#131f3c);flex-wrap:wrap}
+  header h1{font-size:19px;margin:0;letter-spacing:.3px}
+  header .tag{font-size:12px;color:var(--muted)}
+  header .spacer{flex:1}
+  .helpbtn{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;
+    padding:7px 12px;font-size:13px;cursor:pointer;touch-action:manipulation}
+  .helpbtn:hover{border-color:var(--accent)}
+  .totstars{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .totstars b{color:var(--accent)}
+
+  .wrap{max-width:1400px;margin:0 auto;padding:12px 14px 30px}
+
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .tab{flex:1 1 140px;text-align:left;background:var(--panel);border:2px solid var(--line);border-radius:12px;
+    padding:7px 12px;cursor:pointer;transition:.12s;touch-action:manipulation;color:var(--ink);font:inherit}
+  .tab:hover{border-color:#3a4d7d}
+  .tab.sel{border-color:var(--accent);background:#20315c}
+  .tab.locked{opacity:.5;cursor:not-allowed}
+  .tab.locked:hover{border-color:var(--line)}
+  .tab .n{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+  .tab .nm{font-weight:700;font-size:14px;margin-top:2px}
+  .tab .st{font-size:12px;color:var(--accent);margin-top:2px;letter-spacing:1px}
+  .tab .st .off{color:#3a4d7d}
+
+  .stagewrap{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#0a1024}
+  canvas#stage{display:block;width:100%;height:clamp(340px,70vh,760px);touch-action:none;
+    user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  @media (max-width:640px){ canvas#stage{height:clamp(320px,100vw,560px)} .tab{flex:1 1 90px;padding:6px 8px} .tab .nm{font-size:12px} }
+
+  .panel{position:absolute;top:12px;right:12px;width:min(440px,calc(100% - 24px));max-height:calc(100% - 24px);
+    overflow:auto;background:rgba(10,17,36,.95);border:1px solid var(--line);border-radius:14px;padding:13px 15px;
+    display:none;box-shadow:0 10px 30px #0009}
+  .panel.show{display:block}
+  .panel.center{left:50%;right:auto;transform:translateX(-50%);width:min(560px,calc(100% - 24px))}
+  .panel.left{left:12px;right:auto}
+  .banner{font-size:18px;font-weight:800;margin:0 0 6px}
+  .ptext{font-size:14px;line-height:1.5;margin:6px 0}
+  .ptips{margin:6px 0;padding-left:20px;font-size:14px;line-height:1.5}
+  .ptips li{margin:3px 0}
+  .muted{color:var(--muted)}
+  .worked{margin-top:8px;font-size:13px;color:var(--muted);background:#0c1428;border:1px solid var(--line);
+    border-radius:10px;padding:9px 11px;line-height:1.55}
+  .worked b{color:var(--ink)}
+  .rowbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .bigstars{font-size:30px;letter-spacing:4px;color:var(--accent);margin:2px 0 4px}
+  .bigstars .off{color:#2c3d6b}
+
+  .dock{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:12px;margin-top:12px}
+  @media (max-width:980px){ .dock{grid-template-columns:1fr 1fr} .dock .card:last-child{grid-column:1 / -1} }
+  @media (max-width:640px){ .dock{grid-template-columns:1fr} }
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-width:0}
+  .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:0 0 8px}
+  .goal{font-size:14px;line-height:1.5}
+  .goal b{color:var(--accent)}
+  .givens{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+  .given{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:6px 10px;min-width:86px}
+  .given .k{font-size:11px;color:var(--muted)}
+  .given .v{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+  .hintline{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.45}
+  .status{font-size:13px;margin-top:8px;min-height:1.3em;color:var(--accent);font-weight:600}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;margin-top:8px}
+  .legend span{display:flex;align-items:center;gap:5px}
+  .dot{width:13px;height:13px;border-radius:50%;display:inline-block;border:2px solid #0006}
+
+  .ctrl{display:flex;align-items:center;gap:10px;margin:7px 0}
+  .ctrl .lab{flex:1;min-width:0}
+  .ctrl .lab .t{font-weight:700}
+  .ctrl .lab .u{font-size:12px;color:var(--muted)}
+  .stepper{display:flex;align-items:center;gap:8px}
+  .stepbtn{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);
+    color:var(--ink);font-size:24px;font-weight:700;cursor:pointer;line-height:1;touch-action:manipulation;
+    user-select:none;-webkit-user-select:none}
+  .stepbtn:active{background:#28407a}
+  .stepbtn:disabled{opacity:.35;cursor:not-allowed}
+  .val{min-width:92px;text-align:center;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;
+    background:#0c1428;border:1px solid var(--line);border-radius:10px;padding:7px 4px}
+  .val small{font-size:12px;color:var(--muted);font-weight:600}
+  .stonepick{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+  .stonepick button{background:var(--panel2);border:2px solid var(--line);color:var(--ink);border-radius:10px;
+    padding:6px 10px;font-weight:700;cursor:pointer;touch-action:manipulation;font-size:13px}
+  .stonepick button.sel{border-color:var(--green);background:#153b28}
+  .derived{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
+  .derived div{background:#0c1428;border:1px solid var(--line);border-radius:10px;padding:5px 8px}
+  .derived .k{font-size:11px;color:var(--muted)}
+  .derived .v{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+  .budget{margin:8px 0 4px}
+  .budget .bar{height:12px;border-radius:6px;background:#0c1428;border:1px solid var(--line);overflow:hidden}
+  .budget .fill{height:100%;background:linear-gradient(90deg,#2fbf57,#ffd166);width:0%}
+  .budget .txt{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
+
+  .btn{border:none;border-radius:12px;padding:12px 16px;font-size:15px;font-weight:800;cursor:pointer;
+    color:#0f1830;background:var(--accent);touch-action:manipulation;user-select:none;-webkit-user-select:none}
+  .btn:hover{filter:brightness(1.05)}
+  .btn.secondary{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+  .btn.secondary:hover{border-color:var(--accent)}
+  .btn.on{border-color:var(--accent);color:var(--accent)}
+  .btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+  .btn.big{width:100%;padding:16px 16px;font-size:20px;letter-spacing:.5px}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .btnrow .btn{flex:1;padding:10px 8px;font-size:14px}
+
+  table.log{width:100%;border-collapse:collapse;font-size:13px}
+  table.log th,table.log td{text-align:right;padding:4px 6px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;white-space:nowrap}
+  table.log th{color:var(--muted);font-weight:600;font-size:12px}
+  table.log td:first-child,table.log th:first-child{text-align:left}
+  .logscroll{max-height:250px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+    border:1px solid var(--line);border-radius:10px}
+  .logscroll table.log thead th{position:sticky;top:0;background:var(--panel2);z-index:1}
+  .logscroll table.log tr:last-child td{border-bottom:none}
+  .ok{color:#8ff0b6;font-weight:700}
+  .no{color:#ff8b9b;font-weight:700}
+  .au{color:var(--gold);font-weight:700}
+  .emptylog{color:var(--muted);font-size:13px;padding:4px 2px}
+  table.score{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0}
+  table.score td,table.score th{padding:3px 6px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
+  table.score th{color:var(--muted);font-weight:600;font-size:12px}
+  table.score td:first-child,table.score th:first-child{text-align:left}
+  table.score tr.tot td{font-weight:800;font-size:15px;border-bottom:none}
+
+  .modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;z-index:30;padding:18px}
+  .modal.show{display:flex}
+  .modalbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:620px;width:100%;
+    padding:22px 24px;line-height:1.55;max-height:88vh;overflow:auto}
+  .modalbox h2{margin-top:0}
+  .introbox{max-width:780px}
+  .introhero{display:flex;align-items:center;gap:14px;margin-bottom:4px}
+  .introhero .rk{font-size:40px;line-height:1}
+  .introhero h2{margin:0;font-size:22px}
+  .introhero .sub{margin:3px 0 0;color:var(--muted);font-size:14px}
+  .modalbox h3{margin:16px 0 8px;font-size:15px}
+  .missions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:8px 0}
+  @media(max-width:620px){ .missions{grid-template-columns:1fr} }
+  .mcard{background:#0c1428;border:1px solid var(--line);border-radius:12px;padding:11px 12px;font-size:13px;line-height:1.45}
+  .mcard .em{font-size:26px}
+  .mcard .t{font-weight:800;font-size:14px;margin:2px 0 4px}
+  .mcard .w{color:var(--accent);font-weight:700;margin-top:6px}
+  ul.tips{margin:0;padding-left:20px}
+  ul.tips li{margin:5px 0}
+  .field{width:100%;font-size:1.1rem;padding:13px 14px;border-radius:12px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--ink);margin-top:6px}
+  .field:focus{outline:2px solid var(--accent);border-color:var(--accent)}
+  .row2{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .row2 .btn{flex:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>🥌 Momentum Stones</h1>
+  <span class="tag">Force · impulse · momentum · collisions</span>
+  <span class="spacer"></span>
+  <span class="totstars" id="totStars"></span>
+  <button class="helpbtn" id="helpBtn">📖&nbsp;How&nbsp;to&nbsp;play</button>
+  <button class="helpbtn" id="teacherBtn" title="Teacher: unlock all levels">🔑</button>
+</header>
+
+<div class="wrap">
+  <div class="tabs" id="tabs"></div>
+  <div class="stagewrap">
+    <canvas id="stage"></canvas>
+    <div class="panel" id="panel"></div>
+  </div>
+  <div class="dock">
+    <div class="card" id="levelCard"></div>
+    <div class="card" id="ctrlCard"></div>
+    <div class="card">
+      <h2>Run log</h2>
+      <div id="logBox"></div>
+    </div>
+  </div>
+</div>
+
+<!-- instructions -->
+<div class="modal" id="intro"><div class="modalbox introbox">
+  <div class="introhero"><div class="rk">🥌</div><div>
+    <h2>Momentum Stones</h2>
+    <p class="sub">Stones slide on frictionless ice. You plan pushes for your green stones, then press Run and see where everything is when the clock stops.</p>
+  </div></div>
+
+  <h3>The stones</h3>
+  <div class="missions">
+    <div class="mcard"><div class="em">🟢</div><div class="t">Green: yours</div>
+      Move them and plan a push for each one: how hard (force), which way, when it starts, and how long it lasts.
+      <div class="w">Worth 0 points</div></div>
+    <div class="mcard"><div class="em">🟡</div><div class="t">Gold: get them in</div>
+      Each gold stone is worth its mass in points, times the zone it ends in.
+      <div class="w">+ mass × zone</div></div>
+    <div class="mcard"><div class="em">🔴</div><div class="t">Red: get them out</div>
+      Each red stone costs its mass in points, times the zone it ends in.
+      <div class="w">− mass × zone</div></div>
+  </div>
+
+  <h3>Zones</h3>
+  <ul class="tips">
+    <li><b>Center circle ×3</b>, the ring between the circles <b>×1</b>, and outside the big circle <b>×0</b>. A stone counts in the zone its <b>center</b> is in.</li>
+    <li>Example: a 4&nbsp;kg gold stone in the center is worth <b>+12</b>. A 2&nbsp;kg red stone in the ring costs <b>−2</b>.</li>
+  </ul>
+
+  <h3>How a round works</h3>
+  <ul class="tips">
+    <li><b>Setup:</b> drag a green stone to move it. Drag the <b>tip of its arrow</b> to aim and set the force, or use the controls under the ice. Dashed lines show where each stone would end up if nothing hit it.</li>
+    <li>You only have so much <b>impulse</b> (force × time, in N·s) to share between your green stones. A push changes a stone's speed by <b>Δv = F·Δt ÷ m</b>, so the same push moves a light stone more than a heavy one.</li>
+    <li>Press <b>▶ Run</b>. Every stone starts with its own velocity, your pushes happen on schedule, and stones bounce off each other. There's no friction, so a moving stone <b>keeps moving</b> until something hits it.</li>
+    <li>When the clock reaches the level's time, everything <b>freezes</b> and the score is counted. Earn ★ to unlock the next level. ★★★ takes a nearly perfect plan.</li>
+    <li>The <b>log</b> keeps every run, so you can compare plans.</li>
+  </ul>
+  <button class="btn" id="startPlay" style="width:100%;margin-top:14px">Start playing 🥌</button>
+</div></div>
+
+<!-- teacher unlock -->
+<div class="modal" id="teacherModal"><div class="modalbox" style="max-width:420px">
+  <h2 style="margin-bottom:6px">🔑 Teacher unlock</h2>
+  <p class="muted" style="margin:0 0 6px;font-size:14px">Opens every level on this device until the page is reloaded.</p>
+  <input class="field" id="teacherField" type="password" inputmode="numeric" autocomplete="off" placeholder="Passcode">
+  <div id="teacherErr" style="color:var(--cpu);font-size:.85rem;min-height:1.1em;margin-top:6px"></div>
+  <div class="row2"><button class="btn secondary" id="teacherCancel">Cancel</button><button class="btn" id="teacherGo">Unlock</button></div>
+</div></div>
+
+<!-- ===== physics engine + levels (also loaded by tools/solve.js) ===== -->
+<script id="engine">
+"use strict";
+const ARENA={L:9, inner:3, outer:6};     // metres: play-area radius, center circle, outer circle
+const DT=1/400;                            // fixed physics step (s)
+const RESTITUTION=1;                       // perfectly elastic collisions
+function radiusFor(m){ return 0.22*Math.sqrt(m)+0.18; }
+function zoneMult(x,y){ const d=Math.hypot(x,y); return d<=ARENA.inner?3:d<=ARENA.outer?1:0; }
+
+/* Each level: T = run time (s), budget = total impulse for all green pushes (N·s),
+   Fmax = largest force (N), tmax = longest push (s), placeMin = green stones must sit fully outside this radius.
+   stars = scores needed for ★, ★★, ★★★ (checked by tools/solve.js). */
+const LEVELS=[
+  { name:'First Push', T:10, budget:10, Fmax:10, tmax:2, placeMin:3, stars:[2,6,6],
+    goal:'Push the <b>gold</b> stone into the <b>center circle</b>, and have it <b>still there</b> at 10 s.',
+    tip:'No friction: once the gold stone is moving it never slows down. A gentle push wins.',
+    greens:[{m:2,x:-5,y:-3}],
+    others:[{k:'gold',m:2,x:6.8,y:1.5}] },
+  { name:'Clear the Center', T:10, budget:14, Fmax:10, tmax:2, placeMin:3, stars:[1,3,3],
+    goal:'Knock the <b>red</b> stone all the way out past the big circle, and get the <b>gold</b> one into the center.',
+    tip:'A red stone in the center costs ×3. Out past the big circle, it costs nothing.',
+    greens:[{m:2,x:-5,y:2},{m:2,x:4,y:-4.5}],
+    others:[{k:'red',m:2,x:0.5,y:0.8},{k:'gold',m:1,x:-1,y:-4.6}] },
+  { name:'Heavy and Light', T:15, budget:18, Fmax:12, tmax:3, placeMin:3, stars:[3,6,9],
+    goal:'The 6 kg red stone is <b>heavy</b>. Move it out, and bring both gold stones into the center.',
+    tip:'Δv = F·Δt ÷ m. The same push barely moves a heavy stone. A fast green stone can hand its momentum over in a collision.',
+    greens:[{m:1,x:-5,y:4},{m:2,x:5,y:-4},{m:4,x:-6,y:-3}],
+    others:[{k:'red',m:6,x:0.3,y:-0.4},{k:'gold',m:1,x:4.2,y:3},{k:'gold',m:3,x:-4.5,y:0}] },
+  { name:'Moving Targets', T:15, budget:18, Fmax:12, tmax:3, placeMin:3, stars:[3,9,12],
+    goal:'Two stones are already sliding. The gold one will <b>overshoot</b> and the red one is headed for the center. Fix both.',
+    tip:'Follow the dashed lines: they show where each stone ends up at 15 s if nothing hits it. Use the start time to meet a moving stone.',
+    greens:[{m:2,x:0,y:-6},{m:2,x:0,y:6.5}],
+    others:[{k:'gold',m:3,x:-7.5,y:1.5,vx:0.9},{k:'red',m:3,x:6.5,y:-1.2,vx:-0.45},{k:'gold',m:1,x:2.5,y:4.2}] },
+  { name:'Crossing Paths', T:20, budget:22, Fmax:12, tmax:3, placeMin:4.5, stars:[2,5,7],
+    goal:'A gold and a red stone are both sliding toward the center. Green stones must start <b>outside the dashed circle</b>.',
+    tip:'Momentum adds as vectors. A sideways hit changes direction without needing to stop the stone.',
+    greens:[{m:2,x:6,y:5},{m:3,x:-6,y:5},{m:2,x:6.5,y:-5}],
+    others:[{k:'gold',m:2,x:0,y:-7.5,vy:0.35},{k:'red',m:4,x:-7.5,y:0,vx:0.35},{k:'gold',m:1,x:4.5,y:4.5},{k:'red',m:1,x:3.5,y:-3.5}] },
+  { name:'Rush Hour', T:20, budget:22, Fmax:15, tmax:3, placeMin:6, stars:[3,7,11],
+    goal:'Five stones on the move. Your green stones must start <b>outside the big circle</b>.',
+    tip:'You can\'t fix everything. Look for the pushes that are worth the most points per N·s.',
+    greens:[{m:2,x:-7.5,y:-3},{m:2,x:7.5,y:3},{m:3,x:0,y:-7.8}],
+    others:[{k:'gold',m:2,x:-4,y:7,vx:0.25,vy:-0.3},{k:'gold',m:3,x:7,y:-5,vx:-0.2,vy:0.15},
+            {k:'red',m:2,x:-6,y:-6,vx:0.3,vy:0.35},{k:'red',m:3,x:5,y:5,vx:-0.15,vy:-0.2},{k:'red',m:1,x:0,y:0}] },
+  { name:'The Heavyweight', T:20, budget:26, Fmax:15, tmax:4, placeMin:6, stars:[4,10,16],
+    goal:'An 8 kg red stone is heading for the center and the big gold stone sitting there.',
+    tip:'Changing the heavyweight\'s momentum takes a big impulse. Is it cheaper to move the gold out of its way?',
+    greens:[{m:2,x:-6.5,y:4},{m:2,x:6.5,y:-4},{m:4,x:0,y:-7.8}],
+    others:[{k:'red',m:8,x:-8,y:-2,vx:0.4,vy:0.1},{k:'gold',m:4,x:0.5,y:0.3},
+            {k:'gold',m:2,x:5,y:-2,vx:-0.1,vy:0.05},{k:'red',m:2,x:3,y:6,vx:-0.1,vy:-0.25}] },
+  { name:'Grand Finale', T:25, budget:30, Fmax:15, tmax:4, placeMin:6, stars:[5,12,16],
+    goal:'Everything at once: seven moving and still stones, four green stones, 25 seconds.',
+    tip:'Plan one push at a time and run often. The log helps you compare.',
+    greens:[{m:1,x:-7.5,y:4},{m:2,x:7.5,y:-4},{m:3,x:3.5,y:7.3},{m:2,x:-4,y:-7.5}],
+    others:[{k:'gold',m:3,x:-7,y:-1,vx:0.35,vy:0.05},{k:'gold',m:1,x:2,y:-7,vy:0.2},{k:'gold',m:2,x:6,y:6,vx:-0.45,vy:-0.3},
+            {k:'red',m:5,x:7.5,y:1.5,vx:-0.3},{k:'red',m:2,x:-3,y:7,vx:0.1,vy:-0.25},{k:'red',m:1,x:0,y:-3.5},{k:'red',m:3,x:-5,y:-5,vx:0.2,vy:0.2}] },
+];
+
+function maxScore(lv){ return lv.others.reduce((s,o)=>s+(o.k==='gold'?3*o.m:0),0); }
+function defaultSetup(lv){ return lv.greens.map(g=>({x:g.x,y:g.y,F:0,dir:Math.atan2(-g.y,-g.x),t0:0,dur:1})); }
+function impulseUsed(setup){ return setup.reduce((s,p)=>s+p.F*p.dur,0); }
+
+function makeStones(lv,setup){
+  const st=[];
+  lv.greens.forEach((g,i)=>{ const p=setup[i];
+    st.push({kind:'green',m:g.m,r:radiusFor(g.m),x:p.x,y:p.y,vx:0,vy:0,idx:i,plan:{F:p.F,dir:p.dir,t0:p.t0,dur:p.dur}}); });
+  lv.others.forEach(o=>st.push({kind:o.k,m:o.m,r:radiusFor(o.m),x:o.x,y:o.y,vx:o.vx||0,vy:o.vy||0}));
+  return st;
+}
+function pushActive(s,t){ return s.plan && s.plan.F>0 && t>=s.plan.t0 && t<s.plan.t0+s.plan.dur; }
+function step(st,t,dt){
+  for(const s of st){ const p=s.plan; if(!p||p.F<=0) continue;
+    const a=Math.max(t,p.t0), b=Math.min(t+dt,p.t0+p.dur);
+    if(b>a){ const dv=p.F/s.m*(b-a); s.vx+=dv*Math.cos(p.dir); s.vy+=dv*Math.sin(p.dir); } }
+  for(const s of st){ s.x+=s.vx*dt; s.y+=s.vy*dt; }
+  const n=st.length;
+  for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){
+    const a=st[i], b=st[j], dx=b.x-a.x, dy=b.y-a.y, rr=a.r+b.r, d2=dx*dx+dy*dy;
+    if(d2>=rr*rr||d2===0) continue;
+    const d=Math.sqrt(d2), nx=dx/d, ny=dy/d, ia=1/a.m, ib=1/b.m;
+    const rv=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
+    if(rv<0){ const J=-(1+RESTITUTION)*rv/(ia+ib);
+      a.vx-=J*ia*nx; a.vy-=J*ia*ny; b.vx+=J*ib*nx; b.vy+=J*ib*ny; a.hit=b.hit=t; }
+    const k=(rr-d)/(ia+ib); a.x-=nx*k*ia; a.y-=ny*k*ia; b.x+=nx*k*ib; b.y+=ny*k*ib;
+  }
+}
+function scoreOf(st){
+  let total=0; const items=[];
+  for(const s of st){ if(s.kind==='green') continue;
+    const mult=zoneMult(s.x,s.y), pts=(s.kind==='gold'?1:-1)*s.m*mult;
+    total+=pts; items.push({s,mult,pts}); }
+  return {total,items};
+}
+function simulate(lv,setup){
+  const st=makeStones(lv,setup), N=Math.round(lv.T/DT);
+  for(let k=0;k<N;k++) step(st,k*DT,DT);
+  return st;
+}
+/* can green stone i of this setup sit at (x,y)? */
+function validSpot(lv,setup,i,x,y){
+  const r=radiusFor(lv.greens[i].m), d=Math.hypot(x,y);
+  if(d-r<lv.placeMin || d+r>ARENA.L) return false;
+  for(let j=0;j<setup.length;j++){ if(j===i) continue;
+    if(Math.hypot(setup[j].x-x,setup[j].y-y)<r+radiusFor(lv.greens[j].m)+0.05) return false; }
+  for(const o of lv.others){ if(Math.hypot(o.x-x,o.y-y)<r+radiusFor(o.m)+0.05) return false; }
+  return true;
+}
+function starsFor(lv,score){ return lv.stars.filter(s=>score>=s).length; }
+if(typeof module!=='undefined') module.exports={ARENA,DT,LEVELS,radiusFor,zoneMult,maxScore,defaultSetup,impulseUsed,makeStones,step,scoreOf,simulate,validSpot,starsFor};
+</script>
+
+<script>
+"use strict";
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const f1=v=>v.toFixed(1), f2=v=>v.toFixed(2);
+const snap=(v,st)=>Math.round(v/st)*st;
+const fixZero=v=>Math.abs(v)<1e-9?0:v;
+const deg=r=>((Math.round(r*180/Math.PI)%360)+360)%360;
+const sgn=v=>v>0?'+'+v:v<0?'−'+(-v):'0';
+function holdBtn(el,fn){ let t1=null,t2=null; const stop=()=>{clearTimeout(t1);clearInterval(t2);t1=t2=null;};
+  el.addEventListener('pointerdown',e=>{ e.preventDefault(); if(el.disabled) return; fn();
+    t1=setTimeout(()=>{ t2=setInterval(()=>{ if(el.disabled){stop();return;} fn(); },70); },380); });
+  ['pointerup','pointerleave','pointercancel'].forEach(ev=>el.addEventListener(ev,stop)); }
+function starStr(n,total=3){ let h=''; for(let i=0;i<total;i++) h+=i<n?'★':'<span class="off">★</span>'; return h; }
+
+/* ---------- progress (saved on this device) ---------- */
+const SAVE_KEY='momentum-stones-v1';
+function loadSave(){ let d=null; try{ d=JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); }catch(e){}
+  return { stars:LEVELS.map((_,i)=>d&&d.stars&&+d.stars[i]||0), best:LEVELS.map((_,i)=>d&&d.best&&d.best[i]!=null?d.best[i]:null) }; }
+function save(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify({stars:state.stars,best:state.best})); }catch(e){} }
+
+const state={li:0, phase:'setup', setup:null, sel:0, stones:null, t:0, acc:0, speed:1, trails:[],
+  ghost:true, teacher:false, log:[], result:null, drag:null, ...loadSave()};
+function unlocked(i){ return state.teacher || i===0 || state.stars[i-1]>0; }
+const LV=()=>LEVELS[state.li];
+
+/* ---------- overlay panel on the stage ---------- */
+const panel=$('#panel');
+function showPanel(html,btns,opts={}){
+  panel.className='panel show'+(opts.center?' center':'')+(opts.left?' left':'');
+  panel.innerHTML=html+`<div class="rowbtns">${btns.map((b,i)=>`<button class="btn ${b.secondary?'secondary':''}" data-i="${i}" ${b.grow?'style="flex:1"':''}>${b.label}</button>`).join('')}</div>`;
+  panel.querySelectorAll('button[data-i]').forEach(el=>el.onclick=()=>btns[+el.dataset.i].fn());
+  panel.scrollTop=0;
+}
+function hidePanel(){ panel.className='panel'; }
+
+/* ---------- level tabs ---------- */
+function renderTabs(){
+  $('#tabs').innerHTML=LEVELS.map((lv,i)=>`<button class="tab ${i===state.li?'sel':''} ${unlocked(i)?'':'locked'}" data-i="${i}">
+    <div class="n">Level ${i+1} ${unlocked(i)?'':'🔒'}</div><div class="nm">${lv.name}</div><div class="st">${starStr(state.stars[i])}</div></button>`).join('');
+  $('#tabs').querySelectorAll('.tab').forEach(el=>el.onclick=()=>{ const i=+el.dataset.i; if(unlocked(i)) loadLevel(i,true); });
+  const tot=state.stars.reduce((a,b)=>a+b,0);
+  $('#totStars').innerHTML=`<b>★ ${tot}</b> / ${LEVELS.length*3}`;
+}
+
+/* ---------- level flow ---------- */
+function loadLevel(i,brief){
+  state.li=i; state.setup=defaultSetup(LEVELS[i]); state.sel=0;
+  toSetup(); renderTabs();
+  if(brief) showBrief();
+}
+function showBrief(){
+  const lv=LV();
+  showPanel(`<div class="banner">Level ${state.li+1} · ${lv.name}</div>
+    <p class="ptext">${lv.goal}</p>
+    <div class="worked">⏱ Runs for <b>${lv.T} s</b> · Impulse budget <b>${lv.budget} N·s</b> · Max force <b>${lv.Fmax} N</b> · Longest push <b>${lv.tmax} s</b><br>
+    ★ ${lv.stars[0]} · ★★ ${lv.stars[1]} · ★★★ ${lv.stars[2]} points (most possible: ${maxScore(lv)})</div>
+    <p class="ptext muted">💡 ${lv.tip}</p>`,[{label:'Plan my pushes',fn:hidePanel,grow:true}],{left:true});
+}
+function toSetup(){
+  state.phase='setup'; state.result=null; state.t=0; state.acc=0; state.trails=[];
+  state.stones=makeStones(LV(),state.setup);
+  hidePanel(); renderLevelCard(); renderCtrl();
+}
+function run(){
+  state.phase='run'; state.t=0; state.acc=0; state.stones=makeStones(LV(),state.setup);
+  state.trails=state.stones.map(s=>[[s.x,s.y]]); state.lastTrail=0;
+  hidePanel(); renderCtrl();
+}
+function finish(){
+  const lv=LV(), sc=scoreOf(state.stones), stars=starsFor(lv,sc.total);
+  state.phase='done'; state.result=sc;
+  const prevUnlocked=LEVELS.map((_,i)=>unlocked(i));
+  if(stars>state.stars[state.li]) state.stars[state.li]=stars;
+  if(state.best[state.li]==null||sc.total>state.best[state.li]) state.best[state.li]=sc.total;
+  save();
+  const gold=sc.items.filter(it=>it.s.kind==='gold').reduce((a,it)=>a+it.pts,0);
+  const red=sc.items.filter(it=>it.s.kind==='red').reduce((a,it)=>a+it.pts,0);
+  state.log.push({lvl:state.li+1,imp:impulseUsed(state.setup),gold,red,total:sc.total,stars});
+  renderLog(); renderTabs(); renderCtrl(); renderLevelCard();
+  const zn=m=>m===3?'center ×3':m===1?'ring ×1':'out ×0';
+  const rows=sc.items.slice().sort((a,b)=>(a.s.kind>b.s.kind?1:-1)||b.s.m-a.s.m).map(it=>
+    `<tr><td><span class="dot" style="background:var(--${it.s.kind})"></span> ${it.s.kind==='gold'?'Gold':'Red'} ${it.s.m} kg</td><td>${zn(it.mult)}</td>
+     <td class="${it.pts>0?'ok':it.pts<0?'no':''}">${sgn(it.pts)}</td></tr>`).join('');
+  const next=state.li+1<LEVELS.length && unlocked(state.li+1);
+  const newly=state.li+1<LEVELS.length && !prevUnlocked[state.li+1] && unlocked(state.li+1);
+  const head=stars===3?'🏆 Perfect plan!':stars===2?'🎉 Great run!':stars===1?'✅ Level cleared!':'❌ Not enough points yet';
+  const btns=[{label:'↺ Adjust my plan',fn:toSetup,secondary:next,grow:true}];
+  if(next) btns.push({label:'Next level →',fn:()=>loadLevel(state.li+1,true),grow:true});
+  showPanel(`<div class="banner">${head}</div>
+    <div class="bigstars">${starStr(stars)}</div>
+    <table class="score"><tr><th>Stone</th><th>Zone at ${lv.T} s</th><th>Points</th></tr>${rows}
+      <tr class="tot"><td>Score</td><td></td><td class="${sc.total>0?'ok':sc.total<0?'no':''}">${sgn(sc.total)}</td></tr></table>
+    <div class="worked">Needed: ★ ${lv.stars[0]} · ★★ ${lv.stars[1]} · ★★★ ${lv.stars[2]}. Impulse used: <b>${f1(impulseUsed(state.setup))} of ${lv.budget} N·s</b>.
+      ${newly?'<br><b style="color:var(--accent)">Level '+(state.li+2)+' unlocked!</b>':''}
+      ${stars===0?'<br>Tip: follow the dashed ghost paths to see where each stone is headed.':''}</div>`,btns);
+}
+
+/* ---------- dock: level card ---------- */
+function renderLevelCard(){
+  const lv=LV();
+  $('#levelCard').innerHTML=`<h2>Level ${state.li+1} · ${lv.name}</h2>
+    <div class="goal">${lv.goal}</div>
+    <div class="givens">
+      <div class="given"><div class="k">Run time</div><div class="v">${lv.T} s</div></div>
+      <div class="given"><div class="k">Impulse budget</div><div class="v">${lv.budget} N·s</div></div>
+      <div class="given"><div class="k">Best score</div><div class="v">${state.best[state.li]==null?'—':sgn(state.best[state.li])}</div></div>
+    </div>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--green)"></i>Yours (0)</span>
+      <span><i class="dot" style="background:var(--gold)"></i>+ mass × zone</span>
+      <span><i class="dot" style="background:var(--red)"></i>− mass × zone</span>
+    </div>
+    <div class="hintline">Zones: center <b>×3</b> · ring <b>×1</b> · outside the big circle <b>×0</b>.<br>
+      ★ ${lv.stars[0]} · ★★ ${lv.stars[1]} · ★★★ ${lv.stars[2]} points (most possible ${maxScore(lv)}).<br>💡 ${lv.tip}</div>
+    <div class="btnrow"><button class="btn secondary" id="briefBtn">Show briefing</button></div>`;
+  $('#briefBtn').onclick=showBrief;
+}
+
+/* ---------- dock: controls card ---------- */
+function allowedF(i){ const lv=LV(), p=state.setup[i];
+  const other=impulseUsed(state.setup)-p.F*p.dur;
+  return Math.min(lv.Fmax, Math.floor(((lv.budget-other)/p.dur)*2+1e-9)/2); }
+function allowedDur(i){ const lv=LV(), p=state.setup[i];
+  const other=impulseUsed(state.setup)-p.F*p.dur;
+  let m=Math.min(lv.tmax, lv.T-p.t0);
+  if(p.F>0) m=Math.min(m, Math.floor(((lv.budget-other)/p.F)*4+1e-9)/4);
+  return m; }
+function ctrlRow(id,label,unit,valHTML){
+  return `<div class="ctrl"><div class="lab"><div class="t">${label}</div><div class="u">${unit}</div></div>
+    <div class="stepper"><button class="stepbtn" id="${id}Dn">−</button><div class="val" id="${id}Val">${valHTML}</div><button class="stepbtn" id="${id}Up">+</button></div></div>`;
+}
+function renderCtrl(){
+  const lv=LV(), card=$('#ctrlCard');
+  if(state.phase!=='setup'){
+    const running=state.phase==='run';
+    card.innerHTML=`<h2>${running?'Running…':'Finished'}</h2>
+      <div class="goal">${running?'Watch the pushes (orange flames) and the collisions. The clock stops at <b>'+lv.T+' s</b>.':'Everything froze at <b>'+lv.T+' s</b>. Points are shown on each scoring stone.'}</div>
+      <div class="btnrow">
+        ${running?[1,2,4].map(s=>`<button class="btn secondary ${state.speed===s?'on':''}" data-sp="${s}">${s}×</button>`).join(''):''}
+      </div>
+      <button class="btn big" id="stopBtn" style="margin-top:10px">${running?'■ Stop':'↺ Adjust my plan'}</button>`;
+    card.querySelectorAll('[data-sp]').forEach(b=>b.onclick=()=>{ state.speed=+b.dataset.sp; renderCtrl(); });
+    $('#stopBtn').onclick=toSetup;
+    return;
+  }
+  const i=state.sel, p=state.setup[i], g=lv.greens[i], used=impulseUsed(state.setup);
+  const J=p.F*p.dur;
+  card.innerHTML=`<h2>Plan your pushes</h2>
+    <div class="stonepick">${lv.greens.map((gg,k)=>`<button class="${k===i?'sel':''}" data-k="${k}">🟢 #${k+1} · ${gg.m} kg</button>`).join('')}</div>
+    ${ctrlRow('F','Force','newtons (N)',`${f1(p.F)} <small>N</small>`)}
+    ${ctrlRow('D','Direction','degrees, 0° = right, 90° = up',`${deg(p.dir)}<small>°</small>`)}
+    ${ctrlRow('S','Push starts at','seconds after Run',`${f2(p.t0)} <small>s</small>`)}
+    ${ctrlRow('T','Push lasts','Δt, seconds',`${f2(p.dur)} <small>s</small>`)}
+    <div class="derived">
+      <div><div class="k">a = F ÷ m</div><div class="v">${f2(p.F/g.m)} m/s²</div></div>
+      <div><div class="k">Impulse F·Δt</div><div class="v">${f1(J)} N·s</div></div>
+      <div><div class="k">Δv = F·Δt ÷ m</div><div class="v">${f2(J/g.m)} m/s</div></div>
+    </div>
+    <div class="budget"><div class="bar"><div class="fill" style="width:${clamp(used/lv.budget*100,0,100)}%"></div></div>
+      <div class="txt"><span>Impulse used (all green stones)</span><span>${f1(used)} / ${lv.budget} N·s</span></div></div>
+    <button class="btn big" id="runBtn">▶ Run ${lv.T} s</button>
+    <div class="btnrow">
+      <button class="btn secondary ${state.ghost?'on':''}" id="ghostBtn">Ghost paths: ${state.ghost?'on':'off'}</button>
+      <button class="btn secondary" id="resetBtn">Reset stones</button>
+    </div>`;
+  card.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{ state.sel=+b.dataset.k; renderCtrl(); });
+  const P=()=>state.setup[state.sel];
+  const bind=(id,fn)=>{ holdBtn($('#'+id+'Dn'),()=>{fn(-1);renderCtrlVals();}); holdBtn($('#'+id+'Up'),()=>{fn(1);renderCtrlVals();}); };
+  bind('F',s=>{ P().F=clamp(fixZero(snap(P().F+0.5*s,0.5)),0,allowedF(state.sel)); });
+  bind('D',s=>{ P().dir=(snap(deg(P().dir)+5*s,5)+360)%360*Math.PI/180; });
+  bind('S',s=>{ P().t0=clamp(fixZero(snap(P().t0+0.25*s,0.25)),0,lv.T-P().dur); });
+  bind('T',s=>{ P().dur=clamp(snap(P().dur+0.25*s,0.25),0.25,Math.max(0.25,allowedDur(state.sel))); });
+  $('#runBtn').onclick=run;
+  $('#ghostBtn').onclick=()=>{ state.ghost=!state.ghost; renderCtrl(); };
+  $('#resetBtn').onclick=()=>{ state.setup=defaultSetup(lv); state.stones=makeStones(lv,state.setup); renderCtrl(); };
+}
+/* refresh numbers only (keeps the hold-to-repeat buttons alive) */
+function renderCtrlVals(){
+  if(state.phase!=='setup') return;
+  const lv=LV(), p=state.setup[state.sel], g=lv.greens[state.sel], used=impulseUsed(state.setup), J=p.F*p.dur;
+  $('#FVal').innerHTML=`${f1(p.F)} <small>N</small>`;
+  $('#DVal').innerHTML=`${deg(p.dir)}<small>°</small>`;
+  $('#SVal').innerHTML=`${f2(p.t0)} <small>s</small>`;
+  $('#TVal').innerHTML=`${f2(p.dur)} <small>s</small>`;
+  const d=$('#ctrlCard').querySelectorAll('.derived .v');
+  d[0].textContent=`${f2(p.F/g.m)} m/s²`; d[1].textContent=`${f1(J)} N·s`; d[2].textContent=`${f2(J/g.m)} m/s`;
+  $('#ctrlCard .budget .fill').style.width=clamp(used/lv.budget*100,0,100)+'%';
+  $('#ctrlCard .budget .txt span:last-child').textContent=`${f1(used)} / ${lv.budget} N·s`;
+  state.stones=makeStones(lv,state.setup);
+}
+
+/* ---------- log ---------- */
+function renderLog(){
+  if(!state.log.length){ $('#logBox').innerHTML='<div class="emptylog">No runs yet. Plan your pushes and press ▶ Run.</div>'; return; }
+  $('#logBox').innerHTML=`<div class="logscroll"><table class="log"><thead><tr><th>#</th><th>Lvl</th><th>Impulse</th><th>Gold</th><th>Red</th><th>Score</th><th>★</th></tr></thead><tbody>
+    ${state.log.map((r,k)=>`<tr><td>${k+1}</td><td>${r.lvl}</td><td>${f1(r.imp)}</td><td class="au">${sgn(r.gold)}</td><td class="no">${sgn(r.red)}</td>
+    <td class="${r.total>0?'ok':r.total<0?'no':''}">${sgn(r.total)}</td><td>${'★'.repeat(r.stars)||'–'}</td></tr>`).join('')}</tbody></table></div>`;
+  const sc=$('#logBox .logscroll'); sc.scrollTop=sc.scrollHeight;
+}
+
+/* ---------- canvas ---------- */
+const cv=$('#stage'), ctx=cv.getContext('2d');
+let W=0,H=0,DPR=1,S=1,CX=0,CY=0;
+function resize(){
+  DPR=Math.min(window.devicePixelRatio||1,2.5);
+  const r=cv.getBoundingClientRect(); W=r.width; H=r.height;
+  cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+  S=Math.min(W,H)/2/(ARENA.L*1.04); CX=W/2; CY=H/2;
+}
+const sx=x=>CX+x*S, sy=y=>CY-y*S;
+const wx=X=>(X-CX)/S, wy=Y=>(CY-Y)/S;
+const ARROW_K=2.6;  // metres of arrow at max force
+function aimTip(i){ const lv=LV(), p=state.setup[i], r=radiusFor(lv.greens[i].m), len=r+0.35+ARROW_K*p.F/lv.Fmax;
+  return {x:p.x+Math.cos(p.dir)*len, y:p.y+Math.sin(p.dir)*len}; }
+
+function arrow(x1,y1,x2,y2,col,w){
+  const X1=sx(x1),Y1=sy(y1),X2=sx(x2),Y2=sy(y2), a=Math.atan2(Y2-Y1,X2-X1), h=Math.max(7,w*3);
+  ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=w; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(X1,Y1); ctx.lineTo(X2-Math.cos(a)*h*.7,Y2-Math.sin(a)*h*.7); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(X2,Y2); ctx.lineTo(X2-Math.cos(a-.45)*h,Y2-Math.sin(a-.45)*h); ctx.lineTo(X2-Math.cos(a+.45)*h,Y2-Math.sin(a+.45)*h); ctx.closePath(); ctx.fill();
+}
+const COL={green:'#3ddc84',red:'#ff5a6e',gold:'#ffc83d'};
+const DARK={green:'#13643a',red:'#7a1626',gold:'#7a5a08'};
+
+/* where each stone would be (no collisions) — dashed ghost paths */
+let ghostCache={key:'',paths:[]};
+function ghostPaths(){
+  const lv=LV(), key=state.li+JSON.stringify(state.setup);
+  if(ghostCache.key===key) return ghostCache.paths;
+  const paths=[], dt=0.05, N=Math.round(lv.T/dt);
+  for(const s0 of makeStones(lv,state.setup)){
+    const s={...s0}, pts=[[s.x,s.y]], moving=s.vx||s.vy||(s.plan&&s.plan.F>0);
+    if(!moving){ paths.push(null); continue; }
+    for(let k=0;k<N;k++){ const t=k*dt;
+      if(s.plan&&s.plan.F>0){ const a=Math.max(t,s.plan.t0), b=Math.min(t+dt,s.plan.t0+s.plan.dur);
+        if(b>a){ const dv=s.plan.F/s.m*(b-a); s.vx+=dv*Math.cos(s.plan.dir); s.vy+=dv*Math.sin(s.plan.dir); } }
+      s.x+=s.vx*dt; s.y+=s.vy*dt; if(k%2) pts.push([s.x,s.y]); }
+    pts.push([s.x,s.y]); paths.push({pts,end:[s.x,s.y],kind:s.kind,r:s.r});
+  }
+  ghostCache={key,paths}; return paths;
+}
+
+function draw(){
+  const lv=LV();
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0a1024'; ctx.fillRect(0,0,W,H);
+  // arena
+  const ring=(r,fill,stroke,dash)=>{ ctx.beginPath(); ctx.arc(CX,CY,r*S,0,Math.PI*2); if(fill){ctx.fillStyle=fill;ctx.fill();}
+    if(stroke){ ctx.setLineDash(dash||[]); ctx.strokeStyle=stroke; ctx.lineWidth=2; ctx.stroke(); ctx.setLineDash([]);} };
+  ring(ARENA.L,'#0d1630','#24345f');
+  ring(ARENA.outer,'#132449','#3f5c9c');
+  ring(ARENA.inner,'#1d3366','#ffd166');
+  // metre grid
+  ctx.save(); ctx.beginPath(); ctx.arc(CX,CY,ARENA.L*S,0,Math.PI*2); ctx.clip();
+  ctx.strokeStyle='rgba(255,255,255,.035)'; ctx.lineWidth=1;
+  for(let m=-9;m<=9;m++){ ctx.beginPath(); ctx.moveTo(sx(m),sy(-9)); ctx.lineTo(sx(m),sy(9)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx(-9),sy(m)); ctx.lineTo(sx(9),sy(m)); ctx.stroke(); }
+  ctx.restore();
+  // zone labels
+  const fs=Math.max(11,S*0.42);
+  ctx.font=`800 ${fs}px system-ui,sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle='rgba(255,209,102,.55)'; ctx.fillText('×3',CX,sy(ARENA.inner-0.45));
+  ctx.fillStyle='rgba(159,176,214,.55)'; ctx.fillText('×1',CX,sy(ARENA.outer-0.45));
+  ctx.fillStyle='rgba(159,176,214,.35)'; ctx.fillText('×0',CX,sy(ARENA.L-0.45));
+  // placement zone
+  if(state.phase==='setup' && lv.placeMin!==ARENA.inner && lv.placeMin!==ARENA.outer) ring(lv.placeMin,null,'rgba(61,220,132,.45)',[6,6]);
+  if(state.phase==='setup' && lv.placeMin===ARENA.outer) ring(ARENA.outer+0.02,null,'rgba(61,220,132,.45)',[6,6]);
+
+  const st=state.stones;
+  // ghost paths
+  if(state.phase==='setup' && state.ghost){
+    ghostPaths().forEach(g=>{ if(!g) return;
+      ctx.strokeStyle=COL[g.kind]; ctx.globalAlpha=.55; ctx.lineWidth=1.6; ctx.setLineDash([5,6]);
+      ctx.beginPath(); g.pts.forEach(([x,y],k)=>k?ctx.lineTo(sx(x),sy(y)):ctx.moveTo(sx(x),sy(y))); ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(sx(g.end[0]),sy(g.end[1]),g.r*S,0,Math.PI*2); ctx.lineWidth=2; ctx.stroke();
+      ctx.globalAlpha=1; });
+  }
+  // trails
+  if(state.phase!=='setup'){
+    state.trails.forEach((tr,k)=>{ const s=st[k]; ctx.strokeStyle=COL[s.kind]; ctx.globalAlpha=.35; ctx.lineWidth=2;
+      ctx.beginPath(); tr.forEach(([x,y],j)=>j?ctx.lineTo(sx(x),sy(y)):ctx.moveTo(sx(x),sy(y))); ctx.lineTo(sx(s.x),sy(s.y)); ctx.stroke(); ctx.globalAlpha=1; });
+  }
+  // velocity arrows of moving stones (setup)
+  if(state.phase==='setup'){
+    ctx.font=`700 ${Math.max(10,S*0.3)}px system-ui,sans-serif`;
+    for(const s of st){ const v=Math.hypot(s.vx,s.vy); if(!v) continue;
+      const ux=s.vx/v, uy=s.vy/v, L0=s.r+0.1, L1=s.r+0.5+v*2.2;
+      arrow(s.x+ux*L0,s.y+uy*L0,s.x+ux*L1,s.y+uy*L1,'#cfe0ff',2);
+      ctx.fillStyle='#cfe0ff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(`${f2(v)} m/s`,sx(s.x+ux*(L1+0.55)),sy(s.y+uy*(L1+0.55))); }
+  }
+  // push arrows (setup) and flames (run)
+  if(state.phase==='setup'){
+    state.setup.forEach((p,i)=>{ const r=radiusFor(lv.greens[i].m), tip=aimTip(i), sel=i===state.sel;
+      const ux=Math.cos(p.dir), uy=Math.sin(p.dir);
+      if(p.F>0) arrow(p.x+ux*(r+0.08),p.y+uy*(r+0.08),tip.x,tip.y,sel?'#3ddc84':'rgba(61,220,132,.6)',sel?4:3);
+      ctx.beginPath(); ctx.arc(sx(tip.x),sy(tip.y),Math.max(8,S*0.2),0,Math.PI*2);
+      ctx.fillStyle=sel?'#3ddc84':'rgba(61,220,132,.35)'; ctx.fill(); ctx.strokeStyle='#0a1024'; ctx.lineWidth=2; ctx.stroke();
+      if(p.F>0){ ctx.font=`700 ${Math.max(10,S*0.3)}px system-ui,sans-serif`; ctx.fillStyle='#bff5d4'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        const lx=tip.x+ux*0.75, ly=tip.y+uy*0.75;
+        ctx.fillText(`${f1(p.F)} N`,sx(lx),sy(ly)-7); ctx.fillText(`${f2(p.t0)}–${f2(p.t0+p.dur)} s`,sx(lx),sy(ly)+7); }
+    });
+  } else if(state.phase==='run'){
+    for(const s of st){ if(!pushActive(s,state.t)) continue;
+      const ux=Math.cos(s.plan.dir), uy=Math.sin(s.plan.dir), fl=s.r+0.25+0.9*s.plan.F/lv.Fmax*(0.8+0.2*Math.sin(state.t*40));
+      ctx.beginPath(); ctx.moveTo(sx(s.x-uy*s.r*.55),sy(s.y+ux*s.r*.55)); ctx.lineTo(sx(s.x-ux*fl),sy(s.y-uy*fl)); ctx.lineTo(sx(s.x+uy*s.r*.55),sy(s.y-ux*s.r*.55));
+      ctx.fillStyle='rgba(255,150,40,.85)'; ctx.fill(); }
+  }
+  // stones
+  for(const s of st){
+    const X=sx(s.x), Y=sy(s.y), R=s.r*S;
+    const grd=ctx.createRadialGradient(X-R*.35,Y-R*.35,R*.1,X,Y,R);
+    grd.addColorStop(0,'#ffffff'); grd.addColorStop(.25,COL[s.kind]); grd.addColorStop(1,DARK[s.kind]);
+    ctx.beginPath(); ctx.arc(X,Y,R,0,Math.PI*2); ctx.fillStyle=grd; ctx.fill();
+    ctx.lineWidth=2; ctx.strokeStyle='rgba(0,0,0,.5)'; ctx.stroke();
+    if(state.phase==='setup' && s.kind==='green' && s.idx===state.sel){ ctx.beginPath(); ctx.arc(X,Y,R+5,0,Math.PI*2); ctx.strokeStyle='#eaf0ff'; ctx.lineWidth=2; ctx.setLineDash([4,4]); ctx.stroke(); ctx.setLineDash([]); }
+    ctx.fillStyle='#0a1024'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font=`800 ${Math.max(10,R*0.85)}px system-ui,sans-serif`; ctx.fillText(s.m,X,Y-R*0.08);
+    ctx.font=`700 ${Math.max(7,R*0.38)}px system-ui,sans-serif`; ctx.fillText('kg',X,Y+R*0.52);
+  }
+  // final points labels
+  if(state.phase==='done' && state.result){
+    ctx.font=`900 ${Math.max(13,S*0.5)}px system-ui,sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    for(const it of state.result.items){ const s=it.s, X=sx(s.x), Y=sy(s.y)-s.r*S-Math.max(12,S*0.35);
+      const txt=sgn(it.pts); ctx.lineWidth=4; ctx.strokeStyle='#0a1024'; ctx.strokeText(txt,X,Y);
+      ctx.fillStyle=it.pts>0?'#8ff0b6':it.pts<0?'#ff8b9b':'#9fb0d6'; ctx.fillText(txt,X,Y); }
+  }
+  // clock
+  const T=lv.T, t=state.phase==='setup'?0:Math.min(state.t,T);
+  ctx.textAlign='left'; ctx.textBaseline='top';
+  ctx.fillStyle='rgba(10,17,36,.8)'; ctx.fillRect(10,10,150,54); ctx.strokeStyle='#2c3d6b'; ctx.lineWidth=1; ctx.strokeRect(10.5,10.5,149,53);
+  ctx.fillStyle=state.phase==='done'?'#ffd166':'#eaf0ff'; ctx.font='800 22px system-ui,sans-serif';
+  ctx.fillText(`t = ${f1(t)} s`,20,16);
+  ctx.fillStyle='#1d2b52'; ctx.fillRect(20,46,130,8); ctx.fillStyle=state.phase==='done'?'#ffd166':'#3ddc84'; ctx.fillRect(20,46,130*t/T,8);
+  ctx.font='600 11px system-ui,sans-serif'; ctx.fillStyle='#9fb0d6'; ctx.textAlign='right'; ctx.fillText(`of ${T} s`,150,18);
+  // scale bar
+  ctx.strokeStyle='#9fb0d6'; ctx.lineWidth=2; ctx.beginPath(); const bx=14, by=H-18; ctx.moveTo(bx,by); ctx.lineTo(bx+S,by);
+  ctx.moveTo(bx,by-4); ctx.lineTo(bx,by+4); ctx.moveTo(bx+S,by-4); ctx.lineTo(bx+S,by+4); ctx.stroke();
+  ctx.fillStyle='#9fb0d6'; ctx.textAlign='left'; ctx.textBaseline='bottom'; ctx.font='600 11px system-ui,sans-serif'; ctx.fillText('1 m',bx,by-6);
+  // live score while running
+  if(state.phase==='run'){ const sc=scoreOf(st).total; ctx.textAlign='right'; ctx.textBaseline='top'; ctx.font='800 18px system-ui,sans-serif';
+    ctx.fillStyle=sc>0?'#8ff0b6':sc<0?'#ff8b9b':'#eaf0ff'; ctx.fillText(`Score now ${sgn(sc)}`,W-14,16); }
+}
+
+/* ---------- pointer input (setup only) ---------- */
+function ptr(e){ const r=cv.getBoundingClientRect(); return {x:wx(e.clientX-r.left), y:wy(e.clientY-r.top)}; }
+cv.addEventListener('pointerdown',e=>{
+  if(state.phase!=='setup' || panel.classList.contains('show')) return;
+  const p=ptr(e), lv=LV(), grab=Math.max(0.5,22/S);
+  // aim handles first (selected one wins ties)
+  const order=[state.sel,...state.setup.map((_,i)=>i).filter(i=>i!==state.sel)];
+  for(const i of order){ const tip=aimTip(i); if(Math.hypot(p.x-tip.x,p.y-tip.y)<grab){ state.sel=i; state.drag={mode:'aim',i}; cv.setPointerCapture(e.pointerId); renderCtrl(); return; } }
+  for(const i of order){ const q=state.setup[i], r=radiusFor(lv.greens[i].m);
+    if(Math.hypot(p.x-q.x,p.y-q.y)<r+Math.max(0.2,10/S)){ state.sel=i; state.drag={mode:'move',i,ox:q.x-p.x,oy:q.y-p.y}; cv.setPointerCapture(e.pointerId); renderCtrl(); return; } }
+});
+cv.addEventListener('pointermove',e=>{
+  const d=state.drag; if(!d) return; const p=ptr(e), lv=LV(), q=state.setup[d.i];
+  if(d.mode==='move'){
+    const nx=p.x+d.ox, ny=p.y+d.oy;
+    if(validSpot(lv,state.setup,d.i,nx,ny)){ q.x=nx; q.y=ny; }
+    else { // slide toward the pointer as far as allowed
+      for(let k=1;k<=8;k++){ const f=1-k/8, tx=q.x+(nx-q.x)*f, ty=q.y+(ny-q.y)*f; if(validSpot(lv,state.setup,d.i,tx,ty)){ q.x=tx; q.y=ty; break; } } }
+  } else {
+    const r=radiusFor(lv.greens[d.i].m), dx=p.x-q.x, dy=p.y-q.y, len=Math.hypot(dx,dy);
+    if(len>r*0.5) q.dir=Math.round(Math.atan2(dy,dx)*180/Math.PI)*Math.PI/180;
+    const F=fixZero(snap((len-r-0.35)/ARROW_K*lv.Fmax,0.5));
+    q.F=clamp(F,0,allowedF(d.i));
+  }
+  renderCtrlVals();
+});
+['pointerup','pointercancel'].forEach(ev=>cv.addEventListener(ev,()=>{ state.drag=null; }));
+
+/* ---------- main loop ---------- */
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000); last=now;
+  if(state.phase==='run'){
+    const lv=LV(), N=Math.round(lv.T/DT);
+    state.acc+=dt*state.speed;
+    let k=Math.round(state.t/DT);
+    while(state.acc>=DT && k<N){ step(state.stones,k*DT,DT); k++; state.acc-=DT; }
+    state.t=k*DT;
+    if(state.t-state.lastTrail>=0.1){ state.lastTrail=state.t; state.stones.forEach((s,j)=>state.trails[j].push([s.x,s.y])); }
+    if(k>=N){ state.t=lv.T; finish(); }
+  }
+  draw();
+  requestAnimationFrame(frame);
+}
+
+/* ---------- modals ---------- */
+$('#helpBtn').onclick=()=>$('#intro').classList.add('show');
+$('#startPlay').onclick=()=>{ $('#intro').classList.remove('show'); try{localStorage.setItem(SAVE_KEY+'-seen','1');}catch(e){} };
+$('#teacherBtn').onclick=()=>{ $('#teacherField').value=''; $('#teacherErr').textContent=''; $('#teacherModal').classList.add('show'); setTimeout(()=>$('#teacherField').focus(),50); };
+$('#teacherCancel').onclick=()=>$('#teacherModal').classList.remove('show');
+function teacherTry(){ if($('#teacherField').value.trim()==='1253'){ state.teacher=true; $('#teacherModal').classList.remove('show'); renderTabs(); }
+  else $('#teacherErr').textContent='That passcode isn\'t right.'; }
+$('#teacherGo').onclick=teacherTry;
+$('#teacherField').addEventListener('keydown',e=>{ if(e.key==='Enter') teacherTry(); });
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT') return;
+  if(e.key==='Escape') document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'));
+});
+
+/* ---------- start ---------- */
+window.addEventListener('resize',resize);
+resize();
+let startAt=0; while(startAt+1<LEVELS.length && unlocked(startAt+1)) startAt++;
+loadLevel(startAt,true);
+renderLog();
+let seen=false; try{ seen=!!localStorage.getItem(SAVE_KEY+'-seen'); }catch(e){}
+if(!seen) $('#intro').classList.add('show');
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
