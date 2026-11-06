@@ -9,7 +9,7 @@
     --bg:#0f1830; --panel:#16213e; --panel2:#1d2b52; --ink:#eaf0ff;
     --muted:#9fb0d6; --line:#2c3d6b; --accent:#ffd166;
     --good:#2fbf57; --bad:#e6294b; --cpu:#ff5a6e;
-    --green:#3ddc84; --red:#ff5a6e; --gold:#ffc83d;
+    --green:#3ddc84; --red:#ff5a6e; --gold:#ffc83d; --gray:#aab4c8;
   }
   *{box-sizing:border-box}
   html,body{margin:0;min-height:100%}
@@ -40,6 +40,14 @@
   .tab .nm{font-weight:700;font-size:14px;margin-top:2px}
   .tab .st{font-size:12px;color:var(--accent);margin-top:2px;letter-spacing:1px}
   .tab .st .off{color:#3a4d7d}
+  .worlds{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  .wtab{background:var(--panel2);border:2px solid var(--line);border-radius:10px;padding:6px 14px;cursor:pointer;color:var(--ink);
+    font:inherit;font-weight:800;font-size:14px;touch-action:manipulation}
+  .wtab .ws{color:var(--accent);font-weight:700;font-size:12px;margin-left:6px}
+  .wtab.sel{border-color:var(--accent);background:#20315c}
+  .wtab.locked{opacity:.55}
+  .newtag{background:var(--accent);color:#0f1830;border-radius:6px;padding:0 5px;font-size:11px;font-weight:900;margin-left:4px}
+  .feat{margin:4px 0;font-size:13px;line-height:1.45}
 
   .stagewrap{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#0a1024}
   canvas#stage{display:block;width:100%;height:clamp(340px,70vh,760px);touch-action:none;
@@ -179,6 +187,7 @@
 </header>
 
 <div class="wrap">
+  <div class="worlds" id="worlds"></div>
   <div class="tabs" id="tabs"></div>
   <div class="playrow">
     <div class="card" id="ctrlCard"></div>
@@ -232,6 +241,16 @@
     <li>Earn ★ to unlock the next level. ★★★ takes the right result <b>and</b> a thrifty plan.</li>
     <li>The <b>log</b> keeps every run, so you can compare plans.</li>
   </ul>
+
+  <h3>World 2 · Strange Ice (16 levels, unlocks after level 8)</h3>
+  <ul class="tips">
+    <li>🌀 <b>Gravity wells</b> pull every stone toward them. Light and heavy stones get the same acceleration.</li>
+    <li>🟫 <b>Rough patches</b> (friction) slow sliding stones down until they stop.</li>
+    <li>💨 <b>Wind zones</b> push every stone inside them with the same force, so light stones get blown around more.</li>
+    <li>🕳️ <b>Pits</b> swallow any stone whose center slides over them. It stays there, and still scores.</li>
+    <li>🟣 <b>Sticky stones</b> glue onto whatever they touch, and the two move as one heavier stone.</li>
+    <li>🎯 New <b>rink and target shapes</b>: rectangles, rings, twin targets, even a ×5 zone.</li>
+  </ul>
   <button class="btn" id="startPlay" style="width:100%;margin-top:14px">Start playing 🥌</button>
 </div></div>
 
@@ -251,7 +270,6 @@ const ARENA={L:9, inner:3, outer:6};     // metres: play-area radius, center cir
 const DT=1/400;                            // fixed physics step (s)
 const RESTITUTION=1;                       // perfectly elastic collisions
 function radiusFor(m){ return 0.22*Math.sqrt(m)+0.18; }
-function zoneMult(x,y){ const d=Math.hypot(x,y); return d<=ARENA.inner?3:d<=ARENA.outer?1:0; }
 
 /* Each level: T = run time (s), budget = total impulse for all green pushes (N·s),
    Fmax = largest force (N), tmax = longest push (s), placeMin = green stones must sit fully outside this radius.
@@ -302,7 +320,148 @@ const LEVELS=[
             {k:'red',m:5,x:7.5,y:1.5,vx:-0.3},{k:'red',m:2,x:-3,y:7,vx:0.1,vy:-0.25},{k:'red',m:1,x:0,y:-3.5},{k:'red',m:3,x:-5,y:-5,vx:0.2,vy:0.2}] },
 ];
 
-function maxScore(lv){ return lv.others.reduce((s,o)=>s+(o.k==='gold'?3*o.m:0),0); }
+/* ===== World 2: Strange Ice ===== */
+const RECT=(w,h,x=0,y=0)=>({type:'rect',x,y,w,h});
+const CIRC=(r,x=0,y=0)=>({type:'circle',x,y,r});
+const RING=(r1,r2,x=0,y=0)=>({type:'ring',x,y,r1,r2});
+const WORLD2=[
+  { name:'Gravity Well', T:15, budget:14, Fmax:10, tmax:2, stars:[2.5,6,9], isNew:['wells'],
+    goal:'A <b>gravity well</b> pulls every stone toward it. Use it, or fight it.',
+    tip:'Gravity gives light and heavy stones the same acceleration, and it pulls harder up close. Watch the curved ghost paths.',
+    wells:[{x:3.5,y:-3.5,GM:0.8}], noPlace:[CIRC(3)],
+    greens:[{m:2,x:-6,y:-3},{m:2,x:-3,y:6}],
+    others:[{k:'gold',m:2,x:-5,y:2.5},{k:'red',m:3,x:-1.5,y:0.5},{k:'gold',m:1,x:6,y:3}] },
+  { name:'Slingshot', T:20, budget:14, Fmax:10, tmax:2, stars:[3.5,8,12], isNew:['zones'],
+    goal:'The ×3 target is <b>off to the side</b> and a well sits in the middle. A red stone is about to fall through the target.',
+    tip:'A stone passing close to a well speeds up on the way in and slows down on the way out.',
+    zones:[{...CIRC(6),m:1},{...CIRC(2.2,3.5,3.5),m:3}], wells:[{x:0,y:0,GM:1.2}], noPlace:[CIRC(6)],
+    greens:[{m:2,x:-7.5,y:-3},{m:1,x:-3,y:-7.5}],
+    others:[{k:'gold',m:3,x:-4,y:4},{k:'gold',m:1,x:5,y:-5},{k:'red',m:3,x:5.5,y:5}] },
+  { name:'Rough Patch', T:15, budget:16, Fmax:12, tmax:2, stars:[2.5,5,8], isNew:['friction'],
+    goal:'The center is <b>rough</b>: anything sliding onto it slows down and stops. A red stone is on its way there.',
+    tip:'Friction gives every stone the same deceleration (μg), whatever its mass. On the patch, μ = 0.08, so a = 0.78 m/s².',
+    friction:[{shape:CIRC(3),mu:0.08}], noPlace:[CIRC(3)],
+    greens:[{m:2,x:-5,y:-4},{m:2,x:5,y:-4.5}],
+    others:[{k:'red',m:3,x:-7,y:0.5,vx:0.6},{k:'gold',m:2,x:4.5,y:3},{k:'gold',m:1,x:-3.5,y:-6.5}] },
+  { name:'Sticky Situation', T:15, budget:16, Fmax:12, tmax:2, stars:[2,5,7.5], isNew:['sticky'],
+    goal:'The <b>gray sticky stones</b> are worth nothing, but anything that touches one is glued to it.',
+    tip:'Glued stones move together as one heavier stone: a perfectly inelastic collision. Momentum is conserved, but kinetic energy isn\'t.',
+    noPlace:[CIRC(3)],
+    greens:[{m:2,x:-6,y:-3},{m:2,x:6.5,y:-1}],
+    others:[{k:'gray',m:3,x:-2.5,y:4,st:1},{k:'gray',m:2,x:3,y:-4.2,st:1},{k:'red',m:2,x:0.5,y:-0.5},{k:'red',m:1,x:-1,y:1.6},{k:'gold',m:2,x:5,y:2}] },
+  { name:'Crosswind', T:15, budget:16, Fmax:12, tmax:2, stars:[2,5,7.5], isNew:['wind','zones'],
+    goal:'A <b>wind</b> strip blows <b>down</b> between you and the square target. Aim high to make up for it.',
+    tip:'Wind pushes every stone inside it with the same force, so light stones get blown off course more (a = F ÷ m).',
+    field:RECT(22,13), zones:[{...RECT(16,10,1,0),m:1},{...RECT(4,4,6,0),m:3}],
+    wind:[{shape:RECT(4,13,-1,0),fx:0,fy:-0.8}], noPlace:[RECT(16,10,1,0)],
+    greens:[{m:2,x:-9,y:3},{m:2,x:-9,y:-3}],
+    others:[{k:'gold',m:2,x:-5.5,y:3},{k:'gold',m:1,x:-5.5,y:-3.5},{k:'red',m:2,x:6,y:1}] },
+  { name:'Into the Pit', T:15, budget:14, Fmax:10, tmax:2, stars:[3,6.5,10], isNew:['pits'],
+    goal:'A stone that slides over a <b>pit</b> falls in and stays there. Dump the reds out of play, and get a gold stuck in the middle.',
+    tip:'A stone in a pit still scores for the zone it\'s in, so the pit in the center circle is a gold trap worth ×3.',
+    pits:[{x:7.3,y:0,r:0.9},{x:0,y:-1.8,r:0.65}], noPlace:[CIRC(3)],
+    greens:[{m:2,x:-6,y:1},{m:2,x:0,y:-7}],
+    others:[{k:'red',m:4,x:2,y:0.5},{k:'red',m:1,x:-1.5,y:1.5},{k:'gold',m:2,x:0,y:-4.8},{k:'gold',m:1,x:-5,y:-4}] },
+  { name:'Twin Targets', T:15, budget:16, Fmax:12, tmax:2, stars:[3,7,10.5], isNew:['zones'],
+    goal:'A <b>rectangular rink</b> with <b>two</b> ×3 targets. One already has a red stone in it, and another red is drifting into the second.',
+    tip:'Plan which target each gold should go to. The closer one isn\'t always cheaper.',
+    field:RECT(22,13), zones:[{...RECT(20,11),m:1},{...CIRC(2.2,-5,0),m:3},{...CIRC(2.2,5,0),m:3}], noPlace:[CIRC(2.2,-5,0),CIRC(2.2,5,0)],
+    greens:[{m:2,x:0,y:5},{m:2,x:0,y:-5},{m:1,x:-9.5,y:4.5}],
+    others:[{k:'gold',m:2,x:-1,y:1},{k:'gold',m:3,x:8,y:4,vx:-0.2},{k:'red',m:2,x:-5,y:0.5},{k:'red',m:2,x:6,y:-3,vy:0.25}] },
+  { name:'Orbit', T:20, budget:16, Fmax:12, tmax:2, stars:[3.5,8,12], isNew:['zones'],
+    goal:'The ×3 zone is a <b>ring</b> around a strong well. One gold stone is <b>orbiting</b> outside it.',
+    tip:'A stone moving at just the right speed falls around the well forever: that\'s an orbit. Slowing it lets it fall inward.',
+    zones:[{...CIRC(6.5),m:1},{...RING(2.5,4),m:3}], wells:[{x:0,y:0,GM:2}], noPlace:[CIRC(4)],
+    greens:[{m:2,x:-7,y:-3},{m:2,x:6,y:-5}],
+    others:[{k:'gold',m:2,x:0,y:5.5,vx:0.6},{k:'gold',m:1,x:-3.25,y:0},{k:'red',m:3,x:3.2,y:0,vy:0.75}] },
+  { name:'Glue Trap', T:15, budget:18, Fmax:12, tmax:2, stars:[1,2.5,4], isNew:['sticky'],
+    goal:'These <b>red stones are sticky</b>. Touch one with a green stone and they\'re glued together.',
+    tip:'A green stone stuck to a red one can keep pushing. Start a long push early and it carries the red stone with it.',
+    noPlace:[CIRC(3)],
+    greens:[{m:2,x:-6,y:-2},{m:2,x:6,y:3},{m:1,x:-1,y:7}],
+    others:[{k:'red',m:3,x:0.5,y:0,st:1},{k:'red',m:2,x:-3.8,y:3.8,st:1},{k:'gold',m:2,x:4.5,y:-3},{k:'gold',m:1,x:0,y:-6.8}] },
+  { name:'Downhill', T:15, budget:20, Fmax:12, tmax:2, stars:[5.5,12,19], isNew:['wind'],
+    goal:'A gentle wind blows <b>down across the whole rink</b>. Nothing stays put, and your green stones drift too.',
+    tip:'Same force on every stone: a 1 kg stone gets 6× the acceleration of a 6 kg stone. The heavy red will barely move.',
+    field:RECT(22,13), zones:[{...RECT(16,10),m:1},{...RECT(5,4),m:3}], wind:[{shape:RECT(22,13),fx:0,fy:-0.15}], noPlace:[RECT(16,10)],
+    greens:[{m:2,x:-6,y:5.7},{m:2,x:6,y:5.7},{m:3,x:-9.5,y:0}],
+    others:[{k:'gold',m:1,x:-4,y:4},{k:'gold',m:5,x:3,y:5},{k:'red',m:1,x:0,y:4.5},{k:'red',m:6,x:-1.5,y:3.5}] },
+  { name:'Pit Stop', T:15, budget:14, Fmax:10, tmax:2, stars:[4.5,10,16], isNew:['pits'],
+    goal:'A pit sits right in the <b>middle of the target</b>. Whatever falls in stays at ×3, good or bad.',
+    tip:'A gold stone in the center pit can never be knocked out. Keep the reds away from it!',
+    pits:[{x:0,y:0,r:0.9}], noPlace:[CIRC(3)],
+    greens:[{m:2,x:-6,y:-4},{m:2,x:5,y:5}],
+    others:[{k:'gold',m:3,x:-7,y:2.5,vx:0.8},{k:'gold',m:1,x:2,y:-6.8,vy:0.25},{k:'red',m:2,x:6,y:-1.2,vx:-0.5},{k:'red',m:1,x:0,y:5}] },
+  { name:'Mud Donut', T:15, budget:16, Fmax:12, tmax:2, stars:[4.5,10,15.5], isNew:['friction','zones'],
+    goal:'The ×3 zone is a <b>ring</b> with four <b>mud patches</b> on it. Stones that reach the mud stop there.',
+    tip:'A stone stops on the mud after sliding v² ÷ (2μg). The mud is a perfect parking spot.',
+    zones:[{...CIRC(7),m:1},{...RING(2.5,4.5),m:3}],
+    friction:[0,1,2,3].map(k=>({shape:CIRC(1,3.5*Math.cos(Math.PI/4+k*Math.PI/2),3.5*Math.sin(Math.PI/4+k*Math.PI/2)),mu:0.12})), noPlace:[CIRC(4.5)],
+    greens:[{m:2,x:-5.5,y:5},{m:2,x:5.5,y:-5},{m:1,x:6,y:4}],
+    others:[{k:'gold',m:2,x:0,y:0},{k:'gold',m:3,x:-6,y:0},{k:'red',m:2,x:3.5,y:0},{k:'red',m:3,x:0,y:6,vy:-0.5}] },
+  { name:'Double Well', T:15, budget:16, Fmax:12, tmax:2, stars:[3.5,8,12.5], isNew:['wells'],
+    goal:'<b>Two wells</b> pull from opposite sides of the target. The middle is a balance point, but not a stable one.',
+    tip:'Exactly between equal wells the pulls cancel. Move a little off-center and one well wins.',
+    wells:[{x:-4.5,y:0,GM:1.2},{x:4.5,y:0,GM:1.2}], noPlace:[CIRC(3)],
+    greens:[{m:2,x:-6.5,y:4.5},{m:2,x:6.5,y:-4.5},{m:1,x:0,y:7.8}],
+    others:[{k:'gold',m:2,x:-1.5,y:0},{k:'red',m:2,x:0,y:3.5},{k:'gold',m:1,x:0,y:-5},{k:'red',m:1,x:2,y:-1}] },
+  { name:'Storm', T:20, budget:22, Fmax:12, tmax:3, stars:[4.5,10,15.5], isNew:['wind'],
+    goal:'Four wind zones swirl <b>clockwise</b> around the rink. Only the cross through the middle is calm.',
+    tip:'A stone that rides the wind gets carried all the way around. Push it into the calm cross to stop the ride.',
+    field:RECT(22,14), zones:[{...RECT(16,10),m:1},{...CIRC(2.5),m:3}], noPlace:[RECT(16,10)],
+    wind:[{shape:RECT(10,6,-6,4),fx:0.12,fy:0},{shape:RECT(10,6,6,4),fx:0,fy:-0.12},{shape:RECT(10,6,6,-4),fx:-0.12,fy:0},{shape:RECT(10,6,-6,-4),fx:0,fy:0.12}],
+    greens:[{m:2,x:-9.5,y:0},{m:2,x:9.5,y:0},{m:2,x:0,y:-6.3}],
+    others:[{k:'gold',m:2,x:-6,y:4},{k:'gold',m:3,x:5,y:-4},{k:'red',m:2,x:5,y:4},{k:'red',m:3,x:-1.5,y:-1.5},{k:'gold',m:1,x:-6,y:-4}] },
+  { name:'Minefield', T:20, budget:22, Fmax:12, tmax:3, stars:[2,5,7.5], isNew:[],
+    goal:'Pits, mud and a sticky stone, all at once. Watch your step.',
+    tip:'Pits in the ring lock a stone in at ×1 for good. Use them for reds that you can\'t push all the way out.',
+    pits:[{x:-2,y:4.5,r:0.7},{x:4.5,y:-1.5,r:0.7},{x:-4,y:-3.5,r:0.7}], friction:[{shape:CIRC(2),mu:0.06}], noPlace:[CIRC(4.5)],
+    greens:[{m:2,x:-6,y:5.5},{m:2,x:6,y:-5.5},{m:3,x:-1,y:-7.8}],
+    others:[{k:'gold',m:2,x:-7,y:1,vx:0.4},{k:'gold',m:1,x:6,y:4},{k:'red',m:3,x:1,y:1},{k:'red',m:2,x:5,y:-5,vx:-0.2,vy:0.2},{k:'gray',m:2,x:-1,y:-2.6,st:1}] },
+  { name:'The Gauntlet', T:25, budget:30, Fmax:15, tmax:4, stars:[7,16,25], isNew:[],
+    goal:'Everything at once. There\'s a tiny <b>×5</b> target on a mud patch, worth the trip.',
+    tip:'Stones that reach the ×5 mud stop there. The well, wind, pit and sticky stone all stand in the way.',
+    field:RECT(24,14), zones:[{...RECT(16,10),m:1},{...CIRC(2.2,4,0),m:3},{...CIRC(1.6,-4,0),m:5}],
+    wells:[{x:0,y:3.5,GM:1}], wind:[{shape:RECT(2,14,0.5,0),fx:0,fy:-0.5}], pits:[{x:0,y:-3,r:0.8}],
+    friction:[{shape:CIRC(1.6,-4,0),mu:0.1}], noPlace:[RECT(16,10)],
+    greens:[{m:2,x:-11,y:-1},{m:2,x:11,y:1},{m:2,x:0,y:-6.3},{m:1,x:-11,y:3}],
+    others:[{k:'gold',m:3,x:-9,y:4,vx:0.3,vy:-0.1},{k:'gold',m:2,x:9,y:-4,vx:-0.35,vy:0.1},{k:'gold',m:1,x:0,y:6},
+            {k:'red',m:4,x:4,y:0.5},{k:'red',m:2,x:-6,y:-4,vx:0.2,vy:0.2},{k:'red',m:1,x:-3.6,y:-0.5},{k:'gray',m:2,x:2,y:-2,st:1}] },
+];
+WORLD2.forEach(l=>l.world=1);
+LEVELS.forEach(l=>l.world=0);
+LEVELS.push(...WORLD2);
+const WORLDS=[{name:'World 1 · Ice Basics',em:'🧊'},{name:'World 2 · Strange Ice',em:'🌀'}];
+
+/* fill in defaults so every level has a field, scoring zones and no-placement areas */
+LEVELS.forEach(lv=>{
+  if(!lv.field) lv.field=CIRC(ARENA.L);
+  if(!lv.zones) lv.zones=[{...CIRC(ARENA.outer),m:1},{...CIRC(ARENA.inner),m:3}];
+  if(!lv.noPlace) lv.noPlace=[CIRC(lv.placeMin||ARENA.inner)];
+  for(const k of ['wells','friction','wind','pits']) if(!lv[k]) lv[k]=[];
+  if(!lv.isNew) lv.isNew=[];
+});
+
+/* ---------- shapes ---------- */
+function inShape(sh,x,y){
+  if(sh.type==='circle') return Math.hypot(x-sh.x,y-sh.y)<=sh.r;
+  if(sh.type==='rect') return Math.abs(x-sh.x)<=sh.w/2 && Math.abs(y-sh.y)<=sh.h/2;
+  const d=Math.hypot(x-sh.x,y-sh.y); return d>=sh.r1 && d<=sh.r2;
+}
+function insideFully(sh,x,y,r){   // disc of radius r fully inside shape
+  if(sh.type==='circle') return Math.hypot(x-sh.x,y-sh.y)+r<=sh.r;
+  return Math.abs(x-sh.x)+r<=sh.w/2 && Math.abs(y-sh.y)+r<=sh.h/2;
+}
+function overlaps(sh,x,y,r){      // disc of radius r touches shape
+  if(sh.type==='circle') return Math.hypot(x-sh.x,y-sh.y)<sh.r+r;
+  if(sh.type==='rect'){ const dx=Math.max(Math.abs(x-sh.x)-sh.w/2,0), dy=Math.max(Math.abs(y-sh.y)-sh.h/2,0); return Math.hypot(dx,dy)<r; }
+  const d=Math.hypot(x-sh.x,y-sh.y); return d+r>sh.r1 && d-r<sh.r2;
+}
+function shapeBounds(sh){ return sh.type==='rect'?{hx:Math.abs(sh.x)+sh.w/2,hy:Math.abs(sh.y)+sh.h/2}:{hx:Math.abs(sh.x)+(sh.r||sh.r2),hy:Math.abs(sh.y)+(sh.r||sh.r2)}; }
+
+function zoneMult(lv,x,y){ let m=0; for(const z of lv.zones) if(z.m>m && inShape(z,x,y)) m=z.m; return m; }
+function maxMult(lv){ return Math.max(...lv.zones.map(z=>z.m)); }
+function maxScore(lv){ return lv.others.reduce((s,o)=>s+(o.k==='gold'?maxMult(lv)*o.m:0),0); }
 function defaultSetup(lv){ return lv.greens.map(g=>({x:g.x,y:g.y,F:0,dir:Math.atan2(-g.y,-g.x),t0:0,dur:1})); }
 function impulseUsed(setup){ return setup.reduce((s,p)=>s+p.F*p.dur,0); }
 
@@ -310,42 +469,77 @@ function makeStones(lv,setup){
   const st=[];
   lv.greens.forEach((g,i)=>{ const p=setup[i];
     st.push({kind:'green',m:g.m,r:radiusFor(g.m),x:p.x,y:p.y,vx:0,vy:0,idx:i,plan:{F:p.F,dir:p.dir,t0:p.t0,dur:p.dur}}); });
-  lv.others.forEach(o=>st.push({kind:o.k,m:o.m,r:radiusFor(o.m),x:o.x,y:o.y,vx:o.vx||0,vy:o.vy||0}));
+  lv.others.forEach(o=>st.push({kind:o.k,m:o.m,r:radiusFor(o.m),x:o.x,y:o.y,vx:o.vx||0,vy:o.vy||0,sticky:!!o.st}));
   return st;
 }
-function pushActive(s,t){ return s.plan && s.plan.F>0 && t>=s.plan.t0 && t<s.plan.t0+s.plan.dur; }
-function step(st,t,dt){
-  for(const s of st){ const p=s.plan; if(!p||p.F<=0) continue;
-    const a=Math.max(t,p.t0), b=Math.min(t+dt,p.t0+p.dur);
-    if(b>a){ const dv=p.F/s.m*(b-a); s.vx+=dv*Math.cos(p.dir); s.vy+=dv*Math.sin(p.dir); } }
-  for(const s of st){ s.x+=s.vx*dt; s.y+=s.vy*dt; }
+function pushActive(s,t){ return s.plan && s.plan.F>0 && !s.stuck && t>=s.plan.t0 && t<s.plan.t0+s.plan.dur; }
+
+/* ---------- physics ---------- */
+const G_EARTH=9.8, WELL_SOFT2=0.36;
+function groupsOf(st){ const gs=[]; for(const s of st) if(s.g && !gs.includes(s.g)) gs.push(s.g); return gs; }
+function groupCOM(g){ let M=0,x=0,y=0,vx=0,vy=0; for(const s of g.m){ M+=s.m; x+=s.m*s.x; y+=s.m*s.y; vx+=s.m*s.vx; vy+=s.m*s.vy; } return {M,x:x/M,y:y/M,vx:vx/M,vy:vy/M}; }
+function glue(a,b){
+  const ma=a.g?a.g.m:[a], mb=b.g?b.g.m:[b]; if(a.g&&a.g===b.g) return;
+  const g={m:[...ma,...mb]}, c=groupCOM(g);
+  for(const s of g.m){ s.g=g; s.ox=s.x-c.x; s.oy=s.y-c.y; s.vx=c.vx; s.vy=c.vy; }
+}
+function settleGroups(st,snap){
+  for(const g of groupsOf(st)){ const c=groupCOM(g);
+    for(const s of g.m){ s.vx=c.vx; s.vy=c.vy; if(snap){ s.x=c.x+s.ox; s.y=c.y+s.oy; } } }
+}
+function step(st,t,dt,lv){
+  const fx=lv&&(lv.wells.length||lv.friction.length||lv.wind.length);
+  for(const s of st){ if(s.stuck) continue; const p=s.plan;
+    if(p&&p.F>0){ const a=Math.max(t,p.t0), b=Math.min(t+dt,p.t0+p.dur);
+      if(b>a){ const dv=p.F/s.m*(b-a); s.vx+=dv*Math.cos(p.dir); s.vy+=dv*Math.sin(p.dir); } }
+    if(!fx) continue;
+    for(const w of lv.wind) if(inShape(w.shape,s.x,s.y)){ s.vx+=w.fx/s.m*dt; s.vy+=w.fy/s.m*dt; }
+    for(const w of lv.wells){ const dx=w.x-s.x, dy=w.y-s.y, d2=dx*dx+dy*dy, d=Math.sqrt(d2)||1, a=w.GM/(d2+WELL_SOFT2);
+      s.vx+=a*dx/d*dt; s.vy+=a*dy/d*dt; }
+    for(const f of lv.friction) if(inShape(f.shape,s.x,s.y)){ const v=Math.hypot(s.vx,s.vy), dv=f.mu*G_EARTH*dt;
+      if(v<=dv){ s.vx=0; s.vy=0; } else { s.vx*=1-dv/v; s.vy*=1-dv/v; } }
+  }
+  const grouped=st.some(s=>s.g);
+  if(grouped) settleGroups(st,false);
+  for(const s of st){ if(s.stuck) continue; s.x+=s.vx*dt; s.y+=s.vy*dt; }
   const n=st.length;
   for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){
-    const a=st[i], b=st[j], dx=b.x-a.x, dy=b.y-a.y, rr=a.r+b.r, d2=dx*dx+dy*dy;
+    const a=st[i], b=st[j];
+    if(a.stuck||b.stuck||(a.g&&a.g===b.g)) continue;
+    const dx=b.x-a.x, dy=b.y-a.y, rr=a.r+b.r, d2=dx*dx+dy*dy;
     if(d2>=rr*rr||d2===0) continue;
     const d=Math.sqrt(d2), nx=dx/d, ny=dy/d, ia=1/a.m, ib=1/b.m;
-    const rv=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
-    if(rv<0){ const J=-(1+RESTITUTION)*rv/(ia+ib);
+    const rv=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny, stick=a.sticky||b.sticky;
+    if(rv<0){ const J=-(1+(stick?0:RESTITUTION))*rv/(ia+ib);
       a.vx-=J*ia*nx; a.vy-=J*ia*ny; b.vx+=J*ib*nx; b.vy+=J*ib*ny; a.hit=b.hit=t; }
     const k=(rr-d)/(ia+ib); a.x-=nx*k*ia; a.y-=ny*k*ia; b.x+=nx*k*ib; b.y+=ny*k*ib;
+    if(stick) glue(a,b);
+  }
+  if(grouped||st.some(s=>s.g)) settleGroups(st,true);
+  if(lv) for(const p of lv.pits) for(const s of st){
+    if(s.stuck||Math.hypot(s.x-p.x,s.y-p.y)>p.r) continue;
+    for(const q of (s.g?s.g.m:[s])){ q.stuck=true; q.vx=0; q.vy=0; q.pit=p; }
   }
 }
-function scoreOf(st){
+function scoreOf(st,lv){
   let total=0; const items=[];
-  for(const s of st){ if(s.kind==='green') continue;
-    const mult=zoneMult(s.x,s.y), pts=(s.kind==='gold'?1:-1)*s.m*mult;
+  for(const s of st){ if(s.kind!=='gold'&&s.kind!=='red') continue;
+    const mult=zoneMult(lv,s.x,s.y), pts=(s.kind==='gold'?1:-1)*s.m*mult;
     total+=pts; items.push({s,mult,pts}); }
   return {total,items};
 }
 function simulate(lv,setup){
   const st=makeStones(lv,setup), N=Math.round(lv.T/DT);
-  for(let k=0;k<N;k++) step(st,k*DT,DT);
+  for(let k=0;k<N;k++) step(st,k*DT,DT,lv);
   return st;
 }
 /* can green stone i of this setup sit at (x,y)? */
 function validSpot(lv,setup,i,x,y){
-  const r=radiusFor(lv.greens[i].m), d=Math.hypot(x,y);
-  if(d-r<lv.placeMin || d+r>ARENA.L) return false;
+  const r=radiusFor(lv.greens[i].m);
+  if(!insideFully(lv.field,x,y,r)) return false;
+  for(const sh of lv.noPlace) if(overlaps(sh,x,y,r)) return false;
+  for(const p of lv.pits) if(Math.hypot(p.x-x,p.y-y)<p.r+r) return false;
+  for(const w of lv.wells) if(Math.hypot(w.x-x,w.y-y)<0.6+r) return false;
   for(let j=0;j<setup.length;j++){ if(j===i) continue;
     if(Math.hypot(setup[j].x-x,setup[j].y-y)<r+radiusFor(lv.greens[j].m)+0.05) return false; }
   for(const o of lv.others){ if(Math.hypot(o.x-x,o.y-y)<r+radiusFor(o.m)+0.05) return false; }
@@ -358,7 +552,7 @@ function finalScore(lv,stonePts,used){
   return {stone:stonePts, unused, bonus, total:Math.round((stonePts+bonus)*10)/10};
 }
 function starsFor(lv,score){ return lv.stars.filter(s=>score>=s-1e-9).length; }
-if(typeof module!=='undefined') module.exports={ARENA,DT,LEVELS,radiusFor,zoneMult,maxScore,defaultSetup,impulseUsed,makeStones,step,scoreOf,finalScore,simulate,validSpot,starsFor};
+if(typeof module!=='undefined') module.exports={ARENA,DT,LEVELS,WORLDS,radiusFor,zoneMult,maxMult,maxScore,defaultSetup,impulseUsed,makeStones,step,scoreOf,finalScore,simulate,validSpot,starsFor,inShape,overlaps,insideFully};
 </script>
 
 <script>
@@ -398,9 +592,38 @@ function showPanel(html,btns,opts={}){
 }
 function hidePanel(){ panel.className='panel'; }
 
+/* ---------- level features (world 2 obstacles) ---------- */
+const FEATURES={
+  wells:{em:'🌀',name:'Gravity well',txt:'pulls every stone toward it. Like real gravity, light and heavy stones get the same acceleration, and the pull is stronger up close.'},
+  friction:{em:'🟫',name:'Rough patch',txt:'friction slows any stone sliding on it until it stops. Every stone slows at the same rate (μg), whatever its mass.'},
+  wind:{em:'💨',name:'Wind zone',txt:'pushes every stone inside it with the same force, in the direction of the arrows. Light stones speed up more: a = F ÷ m.'},
+  pits:{em:'🕳️',name:'Pit',txt:'a stone whose center slides over it falls in and never moves again. It still scores for the zone it\'s in.'},
+  sticky:{em:'🟣',name:'Sticky stone',txt:'glues onto anything it touches. Glued stones move as one heavier stone (a perfectly inelastic collision).'},
+  zones:{em:'🎯',name:'Target shape',txt:'the scoring zones have a new shape. A stone scores the highest zone its center is in.'},
+};
+function levelFeatures(lv){
+  const f=[]; if(lv.wells.length) f.push('wells'); if(lv.friction.length) f.push('friction'); if(lv.wind.length) f.push('wind');
+  if(lv.pits.length) f.push('pits'); if(lv.others.some(o=>o.st)) f.push('sticky'); if(lv.isNew.includes('zones')) f.push('zones');
+  return f;
+}
+function featuresHTML(lv){
+  return levelFeatures(lv).map(k=>`<div class="feat">${FEATURES[k].em} <b>${FEATURES[k].name}</b>${lv.isNew.includes(k)?'<span class="newtag">NEW</span>':''}: ${FEATURES[k].txt}</div>`).join('');
+}
+const SHAPE_NAME={circle:'circle',rect:'rectangle',ring:'ring'};
+function zonesText(lv){
+  if(lv.world===0) return 'Zones: center <b>×3</b> · ring <b>×1</b> · outside the big circle <b>×0</b>.';
+  const zs=lv.zones.slice().sort((a,b)=>b.m-a.m);
+  return 'Zones: '+zs.map(z=>`${SHAPE_NAME[z.type]} <b>×${z.m}</b>`).join(' · ')+' · everywhere else <b>×0</b>.';
+}
+
 /* ---------- level tabs ---------- */
 function renderTabs(){
-  $('#tabs').innerHTML=LEVELS.map((lv,i)=>`<button class="tab ${i===state.li?'sel':''} ${unlocked(i)?'':'locked'}" data-i="${i}">
+  if(state.view==null) state.view=LV().world;
+  $('#worlds').innerHTML=WORLDS.map((w,k)=>{ const idx=LEVELS.map((l,i)=>l.world===k?i:-1).filter(i=>i>=0);
+    const got=idx.reduce((a,i)=>a+state.stars[i],0), open=unlocked(idx[0]);
+    return `<button class="wtab ${state.view===k?'sel':''} ${open?'':'locked'}" data-w="${k}">${w.em} ${w.name}${open?'':' 🔒'}<span class="ws">★ ${got}/${idx.length*3}</span></button>`; }).join('');
+  $('#worlds').querySelectorAll('.wtab').forEach(el=>el.onclick=()=>{ state.view=+el.dataset.w; renderTabs(); });
+  $('#tabs').innerHTML=LEVELS.map((lv,i)=>lv.world!==state.view?'':`<button class="tab ${i===state.li?'sel':''} ${unlocked(i)?'':'locked'}" data-i="${i}">
     <div class="n">Level ${i+1} ${unlocked(i)?'':'🔒'}</div><div class="nm">${lv.name}</div><div class="st">${starStr(state.stars[i])}</div></button>`).join('');
   $('#tabs').querySelectorAll('.tab').forEach(el=>el.onclick=()=>{ const i=+el.dataset.i; if(unlocked(i)) loadLevel(i,true); });
   const tot=state.stars.reduce((a,b)=>a+b,0);
@@ -409,7 +632,7 @@ function renderTabs(){
 
 /* ---------- level flow ---------- */
 function loadLevel(i,brief){
-  state.li=i; state.setup=defaultSetup(LEVELS[i]); state.sel=0;
+  state.li=i; state.view=LEVELS[i].world; state.setup=defaultSetup(LEVELS[i]); state.sel=0;
   toSetup(); renderTabs();
   if(brief) showBrief();
 }
@@ -419,6 +642,7 @@ function showBrief(){
     <p class="ptext">${lv.goal}</p>
     <div class="worked">⏱ Runs for <b>${lv.T} s</b> · Impulse budget <b>${lv.budget} N·s</b> · Max force <b>${lv.Fmax} N</b> · Longest push <b>${lv.tmax} s</b><br>
     ★ ${lv.stars[0]} · ★★ ${lv.stars[1]} · ★★★ ${lv.stars[2]} points (perfect stones: ${maxScore(lv)}, plus your efficiency bonus)</div>
+    ${levelFeatures(lv).length?'<div class="worked">'+featuresHTML(lv)+'</div>':''}
     <p class="ptext muted">💡 ${lv.tip}</p>`,[{label:'Plan my pushes',fn:hidePanel,grow:true}],{left:true});
 }
 function toSetup(){
@@ -432,7 +656,7 @@ function run(){
   hidePanel(); renderCtrl();
 }
 function finish(){
-  const lv=LV(), sc=scoreOf(state.stones), used=impulseUsed(state.setup), fs=finalScore(lv,sc.total,used), stars=starsFor(lv,fs.total);
+  const lv=LV(), sc=scoreOf(state.stones,lv), used=impulseUsed(state.setup), fs=finalScore(lv,sc.total,used), stars=starsFor(lv,fs.total);
   state.phase='done'; state.result=sc;
   const prevUnlocked=LEVELS.map((_,i)=>unlocked(i));
   if(stars>state.stars[state.li]) state.stars[state.li]=stars;
@@ -442,9 +666,9 @@ function finish(){
   const red=sc.items.filter(it=>it.s.kind==='red').reduce((a,it)=>a+it.pts,0);
   state.log.push({lvl:state.li+1,imp:used,gold,red,bonus:fs.bonus,total:fs.total,stars});
   renderLog(); renderTabs(); renderCtrl(); renderLevelCard();
-  const zn=m=>m===3?'center ×3':m===1?'ring ×1':'out ×0';
+  const zn=(m,s)=>(lv.world===0?(m===3?'center ×3':m===1?'ring ×1':'out ×0'):(m?'zone ×'+m:'out ×0'))+(s.stuck?' 🕳️':'')+(s.g?' 🟣':'');
   const rows=sc.items.slice().sort((a,b)=>(a.s.kind>b.s.kind?1:-1)||b.s.m-a.s.m).map(it=>
-    `<tr><td><span class="dot" style="background:var(--${it.s.kind})"></span> ${it.s.kind==='gold'?'Gold':'Red'} ${it.s.m} kg</td><td>${zn(it.mult)}</td>
+    `<tr><td><span class="dot" style="background:var(--${it.s.kind})"></span> ${it.s.kind==='gold'?'Gold':'Red'} ${it.s.m} kg</td><td>${zn(it.mult,it.s)}</td>
      <td class="${it.pts>0?'ok':it.pts<0?'no':''}">${sgn(it.pts)}</td></tr>`).join('');
   const next=state.li+1<LEVELS.length && unlocked(state.li+1);
   const newly=state.li+1<LEVELS.length && !prevUnlocked[state.li+1] && unlocked(state.li+1);
@@ -476,8 +700,10 @@ function renderLevelCard(){
       <span><i class="dot" style="background:var(--green)"></i>Yours (0)</span>
       <span><i class="dot" style="background:var(--gold)"></i>+ mass × zone</span>
       <span><i class="dot" style="background:var(--red)"></i>− mass × zone</span>
+      ${lv.others.some(o=>o.k==='gray')?'<span><i class="dot" style="background:var(--gray)"></i>Neutral (0)</span>':''}
     </div>
-    <div class="hintline">Zones: center <b>×3</b> · ring <b>×1</b> · outside the big circle <b>×0</b>.<br>
+    ${levelFeatures(lv).length?'<div style="margin-top:6px">'+featuresHTML(lv)+'</div>':''}
+    <div class="hintline">${zonesText(lv)}<br>
       ⚡ Efficiency bonus = stone points × % of impulse left unused.<br>
       ★ ${lv.stars[0]} · ★★ ${lv.stars[1]} · ★★★ ${lv.stars[2]} points (perfect stones: ${maxScore(lv)} before the bonus).<br>💡 ${lv.tip}</div>
     <div class="btnrow"><button class="btn secondary" id="briefBtn">Show briefing</button></div>`;
@@ -575,8 +801,10 @@ function resize(){
   DPR=Math.min(window.devicePixelRatio||1,2.5);
   const r=cv.getBoundingClientRect(); W=r.width; H=r.height;
   cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
-  S=Math.min(W,H)/2/(ARENA.L*1.04); CX=W/2; CY=H/2;
+  fit();
 }
+/* scale so the level's whole rink fits the canvas */
+function fit(){ const b=shapeBounds(LV().field); S=Math.min(W/(2*b.hx),H/(2*b.hy))/1.04; CX=W/2; CY=H/2; }
 const sx=x=>CX+x*S, sy=y=>CY-y*S;
 const wx=X=>(X-CX)/S, wy=Y=>(CY-Y)/S;
 const ARROW_K=2.6;  // metres of arrow at max force
@@ -589,23 +817,29 @@ function arrow(x1,y1,x2,y2,col,w){
   ctx.beginPath(); ctx.moveTo(X1,Y1); ctx.lineTo(X2-Math.cos(a)*h*.7,Y2-Math.sin(a)*h*.7); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(X2,Y2); ctx.lineTo(X2-Math.cos(a-.45)*h,Y2-Math.sin(a-.45)*h); ctx.lineTo(X2-Math.cos(a+.45)*h,Y2-Math.sin(a+.45)*h); ctx.closePath(); ctx.fill();
 }
-const COL={green:'#3ddc84',red:'#ff5a6e',gold:'#ffc83d'};
-const DARK={green:'#13643a',red:'#7a1626',gold:'#7a5a08'};
+const COL={green:'#3ddc84',red:'#ff5a6e',gold:'#ffc83d',gray:'#aab4c8'};
+const DARK={green:'#13643a',red:'#7a1626',gold:'#7a5a08',gray:'#3a4256'};
+const ZSTYLE={1:['#132449','#3f5c9c','rgba(159,176,214,.55)'],2:['#16305e','#6fa8ff','rgba(111,168,255,.6)'],
+  3:['#1d3366','#ffd166','rgba(255,209,102,.55)'],5:['#2e2560','#ff9df5','rgba(255,157,245,.65)']};
+function shapePath(sh,grow=0){ ctx.beginPath();
+  if(sh.type==='circle') ctx.arc(sx(sh.x),sy(sh.y),(sh.r+grow)*S,0,Math.PI*2);
+  else if(sh.type==='rect') ctx.rect(sx(sh.x-sh.w/2-grow),sy(sh.y+sh.h/2+grow),(sh.w+2*grow)*S,(sh.h+2*grow)*S);
+  else { ctx.arc(sx(sh.x),sy(sh.y),(sh.r2+grow)*S,0,Math.PI*2); ctx.moveTo(sx(sh.x)+(sh.r1-grow)*S,sy(sh.y)); ctx.arc(sx(sh.x),sy(sh.y),Math.max(0,sh.r1-grow)*S,0,Math.PI*2,true); } }
+function shapeTop(sh){ return sh.type==='rect'?sh.y+sh.h/2:sh.y+(sh.r||sh.r2); }
+function shapeCenter(sh){ return [sh.x,sh.y]; }
 
 /* where each stone would be (no collisions) — dashed ghost paths */
 let ghostCache={key:'',paths:[]};
 function ghostPaths(){
   const lv=LV(), key=state.li+JSON.stringify(state.setup);
   if(ghostCache.key===key) return ghostCache.paths;
-  const paths=[], dt=0.05, N=Math.round(lv.T/dt);
+  // each stone on its own (no collisions) with pushes, wind, wells, friction and pits
+  const paths=[], dt=0.02, N=Math.round(lv.T/dt);
   for(const s0 of makeStones(lv,state.setup)){
-    const s={...s0}, pts=[[s.x,s.y]], moving=s.vx||s.vy||(s.plan&&s.plan.F>0);
-    if(!moving){ paths.push(null); continue; }
-    for(let k=0;k<N;k++){ const t=k*dt;
-      if(s.plan&&s.plan.F>0){ const a=Math.max(t,s.plan.t0), b=Math.min(t+dt,s.plan.t0+s.plan.dur);
-        if(b>a){ const dv=s.plan.F/s.m*(b-a); s.vx+=dv*Math.cos(s.plan.dir); s.vy+=dv*Math.sin(s.plan.dir); } }
-      s.x+=s.vx*dt; s.y+=s.vy*dt; if(k%2) pts.push([s.x,s.y]); }
-    pts.push([s.x,s.y]); paths.push({pts,end:[s.x,s.y],kind:s.kind,r:s.r});
+    const s={...s0}, one=[s], pts=[[s.x,s.y]], x0=s.x, y0=s.y;
+    for(let k=0;k<N;k++){ step(one,k*dt,dt,lv); if(k%3===2) pts.push([s.x,s.y]); if(s.stuck) break; }
+    pts.push([s.x,s.y]);
+    paths.push(Math.hypot(s.x-x0,s.y-y0)>0.05?{pts,end:[s.x,s.y],kind:s.kind,r:s.r,stuck:s.stuck}:null);
   }
   ghostCache={key,paths}; return paths;
 }
@@ -615,27 +849,58 @@ function draw(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.clearRect(0,0,W,H);
   ctx.fillStyle='#0a1024'; ctx.fillRect(0,0,W,H);
-  // arena
-  const ring=(r,fill,stroke,dash)=>{ ctx.beginPath(); ctx.arc(CX,CY,r*S,0,Math.PI*2); if(fill){ctx.fillStyle=fill;ctx.fill();}
-    if(stroke){ ctx.setLineDash(dash||[]); ctx.strokeStyle=stroke; ctx.lineWidth=2; ctx.stroke(); ctx.setLineDash([]);} };
-  ring(ARENA.L,'#0d1630','#24345f');
-  ring(ARENA.outer,'#132449','#3f5c9c');
-  ring(ARENA.inner,'#1d3366','#ffd166');
+  fit();
+  const now=performance.now()/1000;
+  // rink and scoring zones
+  shapePath(lv.field); ctx.fillStyle='#0d1630'; ctx.fill(); ctx.strokeStyle='#24345f'; ctx.lineWidth=2; ctx.stroke();
+  const zs=lv.zones.slice().sort((a,b)=>a.m-b.m);
+  for(const z of zs){ const c=ZSTYLE[z.m]||ZSTYLE[1]; shapePath(z); ctx.fillStyle=c[0]; ctx.fill('evenodd'); ctx.strokeStyle=c[1]; ctx.lineWidth=2; ctx.stroke(); }
   // metre grid
-  ctx.save(); ctx.beginPath(); ctx.arc(CX,CY,ARENA.L*S,0,Math.PI*2); ctx.clip();
+  const fb=shapeBounds(lv.field);
+  ctx.save(); shapePath(lv.field); ctx.clip();
   ctx.strokeStyle='rgba(255,255,255,.035)'; ctx.lineWidth=1;
-  for(let m=-9;m<=9;m++){ ctx.beginPath(); ctx.moveTo(sx(m),sy(-9)); ctx.lineTo(sx(m),sy(9)); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(sx(-9),sy(m)); ctx.lineTo(sx(9),sy(m)); ctx.stroke(); }
+  for(let m=-Math.ceil(fb.hx);m<=Math.ceil(fb.hx);m++){ ctx.beginPath(); ctx.moveTo(sx(m),sy(-fb.hy)); ctx.lineTo(sx(m),sy(fb.hy)); ctx.stroke(); }
+  for(let m=-Math.ceil(fb.hy);m<=Math.ceil(fb.hy);m++){ ctx.beginPath(); ctx.moveTo(sx(-fb.hx),sy(m)); ctx.lineTo(sx(fb.hx),sy(m)); ctx.stroke(); }
+  // rough patches (friction)
+  for(const f of lv.friction){ shapePath(f.shape); ctx.fillStyle='rgba(140,95,50,.5)'; ctx.fill();
+    ctx.save(); shapePath(f.shape); ctx.clip(); ctx.fillStyle='rgba(205,160,105,.45)';
+    const b=shapeBounds(f.shape); for(let gx=-b.hx;gx<=b.hx;gx+=0.35) for(let gy=-b.hy;gy<=b.hy;gy+=0.35){
+      const j=Math.sin(gx*12.9898+gy*78.233)*43758.5453, jx=(j-Math.floor(j))*0.3, jy=((j*7)-Math.floor(j*7))*0.3;
+      ctx.fillRect(sx(gx+jx),sy(gy+jy),1.6,1.6); }
+    ctx.restore(); shapePath(f.shape); ctx.strokeStyle='rgba(205,150,90,.75)'; ctx.lineWidth=1.5; ctx.stroke(); }
+  // wind zones: drifting arrows
+  for(const w of lv.wind){ const F=Math.hypot(w.fx,w.fy), ux=w.fx/F, uy=w.fy/F;
+    shapePath(w.shape); ctx.fillStyle='rgba(120,190,255,.07)'; ctx.fill(); ctx.setLineDash([4,5]); ctx.strokeStyle='rgba(120,190,255,.4)'; ctx.lineWidth=1.5; ctx.stroke(); ctx.setLineDash([]);
+    ctx.save(); shapePath(w.shape); ctx.clip();
+    const b=w.shape, sp=1.6, ph=(now*0.8)%sp;
+    for(let gx=b.x-b.w/2-sp;gx<=b.x+b.w/2+sp;gx+=sp) for(let gy=b.y-b.h/2-sp;gy<=b.y+b.h/2+sp;gy+=sp){
+      const cx=gx+ux*ph+(Math.abs(uy)>0.5?((Math.round(gy/sp)%2)*sp/2):0), cy=gy+uy*ph+(Math.abs(ux)>0.5?((Math.round(gx/sp)%2)*sp/2):0);
+      arrow(cx-ux*0.3,cy-uy*0.3,cx+ux*0.3,cy+uy*0.3,'rgba(150,205,255,.4)',1.5); }
+    ctx.restore();
+    ctx.font=`700 ${Math.max(10,S*0.3)}px system-ui,sans-serif`; ctx.fillStyle='rgba(170,215,255,.85)'; ctx.textAlign='left'; ctx.textBaseline='top';
+    const lx=Math.max(b.x-b.w/2,-fb.hx)+0.15, ly=Math.min(b.y+b.h/2,fb.hy)-0.15;
+    ctx.fillText(`💨 ${F} N ${Math.abs(ux)>Math.abs(uy)?(ux>0?'→':'←'):(uy>0?'↑':'↓')}`,sx(lx),sy(ly)); }
+  // gravity wells
+  for(const w of lv.wells){ const X=sx(w.x), Y=sy(w.y), R=2.6*S;
+    const gr=ctx.createRadialGradient(X,Y,0,X,Y,R); gr.addColorStop(0,'rgba(180,120,255,.55)'); gr.addColorStop(1,'rgba(180,120,255,0)');
+    ctx.beginPath(); ctx.arc(X,Y,R,0,Math.PI*2); ctx.fillStyle=gr; ctx.fill();
+    ctx.strokeStyle='rgba(200,160,255,.35)'; ctx.lineWidth=1; ctx.setLineDash([3,5]);
+    for(const rr of [0.8,1.6,2.4]){ ctx.beginPath(); ctx.arc(X,Y,rr*S,now*0.6+rr,now*0.6+rr+Math.PI*1.6); ctx.stroke(); }
+    ctx.setLineDash([]); ctx.beginPath(); ctx.arc(X,Y,0.32*S,0,Math.PI*2); ctx.fillStyle='#1a0f33'; ctx.fill(); ctx.strokeStyle='#c9a2ff'; ctx.lineWidth=2; ctx.stroke(); }
+  // pits
+  for(const p of lv.pits){ const X=sx(p.x), Y=sy(p.y), R=p.r*S;
+    const gr=ctx.createRadialGradient(X,Y,R*0.2,X,Y,R); gr.addColorStop(0,'#000'); gr.addColorStop(0.75,'#05070f'); gr.addColorStop(1,'#2a3350');
+    ctx.beginPath(); ctx.arc(X,Y,R,0,Math.PI*2); ctx.fillStyle=gr; ctx.fill(); ctx.strokeStyle='#4a5680'; ctx.lineWidth=1.5; ctx.stroke(); }
+  // zone outlines stay visible on top of obstacles
+  for(const z of zs){ shapePath(z); ctx.strokeStyle=(ZSTYLE[z.m]||ZSTYLE[1])[1]; ctx.lineWidth=2; ctx.stroke(); }
   ctx.restore();
   // zone labels
   const fs=Math.max(11,S*0.42);
   ctx.font=`800 ${fs}px system-ui,sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillStyle='rgba(255,209,102,.55)'; ctx.fillText('×3',CX,sy(ARENA.inner-0.45));
-  ctx.fillStyle='rgba(159,176,214,.55)'; ctx.fillText('×1',CX,sy(ARENA.outer-0.45));
-  ctx.fillStyle='rgba(159,176,214,.35)'; ctx.fillText('×0',CX,sy(ARENA.L-0.45));
-  // placement zone
-  if(state.phase==='setup' && lv.placeMin!==ARENA.inner && lv.placeMin!==ARENA.outer) ring(lv.placeMin,null,'rgba(61,220,132,.45)',[6,6]);
-  if(state.phase==='setup' && lv.placeMin===ARENA.outer) ring(ARENA.outer+0.02,null,'rgba(61,220,132,.45)',[6,6]);
+  for(const z of zs){ ctx.fillStyle=(ZSTYLE[z.m]||ZSTYLE[1])[2]; ctx.fillText('×'+z.m,sx(z.x),sy(shapeTop(z)-0.45)); }
+  ctx.fillStyle='rgba(159,176,214,.35)'; ctx.fillText('×0',sx(lv.field.x),sy(shapeTop(lv.field)-0.45));
+  // where green stones may NOT start
+  if(state.phase==='setup') for(const sh of lv.noPlace){ shapePath(sh,0.02); ctx.setLineDash([6,6]); ctx.strokeStyle='rgba(61,220,132,.45)'; ctx.lineWidth=2; ctx.stroke(); ctx.setLineDash([]); }
 
   const st=state.stones;
   // ghost paths
@@ -643,7 +908,7 @@ function draw(){
     ghostPaths().forEach(g=>{ if(!g) return;
       ctx.strokeStyle=COL[g.kind]; ctx.globalAlpha=.55; ctx.lineWidth=1.6; ctx.setLineDash([5,6]);
       ctx.beginPath(); g.pts.forEach(([x,y],k)=>k?ctx.lineTo(sx(x),sy(y)):ctx.moveTo(sx(x),sy(y))); ctx.stroke(); ctx.setLineDash([]);
-      ctx.beginPath(); ctx.arc(sx(g.end[0]),sy(g.end[1]),g.r*S,0,Math.PI*2); ctx.lineWidth=2; ctx.stroke();
+      ctx.beginPath(); ctx.arc(sx(g.end[0]),sy(g.end[1]),g.r*S*(g.stuck?0.75:1),0,Math.PI*2); ctx.lineWidth=2; ctx.stroke();
       ctx.globalAlpha=1; });
   }
   // trails
@@ -677,9 +942,14 @@ function draw(){
       ctx.beginPath(); ctx.moveTo(sx(s.x-uy*s.r*.55),sy(s.y+ux*s.r*.55)); ctx.lineTo(sx(s.x-ux*fl),sy(s.y-uy*fl)); ctx.lineTo(sx(s.x+uy*s.r*.55),sy(s.y-ux*s.r*.55));
       ctx.fillStyle='rgba(255,150,40,.85)'; ctx.fill(); }
   }
+  // glue bonds between stuck-together stones
+  for(const g of groupsOf(st)){ ctx.strokeStyle='rgba(199,125,255,.85)'; ctx.lineWidth=Math.max(4,S*0.18); ctx.lineCap='round';
+    for(let k=1;k<g.m.length;k++){ ctx.beginPath(); ctx.moveTo(sx(g.m[k-1].x),sy(g.m[k-1].y)); ctx.lineTo(sx(g.m[k].x),sy(g.m[k].y)); ctx.stroke(); } }
   // stones
   for(const s of st){
-    const X=sx(s.x), Y=sy(s.y), R=s.r*S;
+    const X=sx(s.x), Y=sy(s.y), R=s.r*S*(s.stuck?0.8:1);
+    ctx.globalAlpha=s.stuck?0.6:1;
+    if(s.sticky){ ctx.beginPath(); ctx.arc(X,Y,R+Math.max(3,S*0.09),0,Math.PI*2); ctx.strokeStyle='#c77dff'; ctx.lineWidth=Math.max(3,S*0.1); ctx.setLineDash([2,3]); ctx.stroke(); ctx.setLineDash([]); }
     const grd=ctx.createRadialGradient(X-R*.35,Y-R*.35,R*.1,X,Y,R);
     grd.addColorStop(0,'#ffffff'); grd.addColorStop(.25,COL[s.kind]); grd.addColorStop(1,DARK[s.kind]);
     ctx.beginPath(); ctx.arc(X,Y,R,0,Math.PI*2); ctx.fillStyle=grd; ctx.fill();
@@ -688,6 +958,7 @@ function draw(){
     ctx.fillStyle='#0a1024'; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.font=`800 ${Math.max(10,R*0.85)}px system-ui,sans-serif`; ctx.fillText(s.m,X,Y-R*0.08);
     ctx.font=`700 ${Math.max(7,R*0.38)}px system-ui,sans-serif`; ctx.fillText('kg',X,Y+R*0.52);
+    ctx.globalAlpha=1;
   }
   // final points labels
   if(state.phase==='done' && state.result){
@@ -709,7 +980,7 @@ function draw(){
   ctx.moveTo(bx,by-4); ctx.lineTo(bx,by+4); ctx.moveTo(bx+S,by-4); ctx.lineTo(bx+S,by+4); ctx.stroke();
   ctx.fillStyle='#9fb0d6'; ctx.textAlign='left'; ctx.textBaseline='bottom'; ctx.font='600 11px system-ui,sans-serif'; ctx.fillText('1 m',bx,by-6);
   // live score while running
-  if(state.phase==='run'){ const sc=scoreOf(st).total; ctx.textAlign='right'; ctx.textBaseline='top'; ctx.font='800 18px system-ui,sans-serif';
+  if(state.phase==='run'){ const sc=scoreOf(st,lv).total; ctx.textAlign='right'; ctx.textBaseline='top'; ctx.font='800 18px system-ui,sans-serif';
     ctx.fillStyle=sc>0?'#8ff0b6':sc<0?'#ff8b9b':'#eaf0ff'; ctx.fillText(`Stone points now ${sgn(sc)}`,W-14,16); }
 }
 
