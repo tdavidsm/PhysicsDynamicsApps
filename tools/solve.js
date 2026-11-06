@@ -4,7 +4,7 @@ const fs=require('fs'), path=require('path');
 const html=fs.readFileSync(path.join(__dirname,'../momentum-stones/index.html'),'utf8');
 const src=html.match(/<script id="engine">([\s\S]*?)<\/script>/)[1];
 const E=new Function('module',src+';return module.exports;')({exports:{}});
-const {LEVELS,defaultSetup,simulate,scoreOf,maxScore,validSpot,radiusFor,impulseUsed,ARENA}=E;
+const {LEVELS,defaultSetup,simulate,scoreOf,finalScore,maxScore,validSpot,radiusFor,impulseUsed,ARENA,starsFor}=E;
 const ITER=+process.argv[2]||1500;
 const rnd=(a,b)=>a+Math.random()*(b-a);
 
@@ -16,7 +16,7 @@ function randomPlan(lv,setup,i){
   p.F=Math.round(rnd(0,lv.Fmax)*2)/2;
 }
 function fixBudget(lv,setup){ const u=impulseUsed(setup); if(u>lv.budget){ const f=lv.budget/u; setup.forEach(p=>p.F=Math.floor(p.F*f*2)/2); } }
-function evalS(lv,s){ return scoreOf(simulate(lv,s)).total; }
+function evalS(lv,s){ return finalScore(lv,scoreOf(simulate(lv,s)).total,impulseUsed(s)).total; }
 function mutate(lv,s){
   const c=s.map(p=>({...p})), i=Math.floor(Math.random()*c.length), p=c[i], r=Math.random();
   if(r<0.2){ const nx=p.x+rnd(-0.6,0.6), ny=p.y+rnd(-0.6,0.6); if(validSpot(lv,c,i,nx,ny)){p.x=nx;p.y=ny;} }
@@ -37,5 +37,6 @@ LEVELS.forEach((lv,li)=>{
   for(let it=0;it<ITER;it++){ const s=defaultSetup(lv); s.forEach((_,i)=>randomPlan(lv,s,i)); fixBudget(lv,s);
     const v=evalS(lv,s); if(v>best){best=v;bestS=s;} }
   for(let it=0;it<ITER;it++){ const c=mutate(lv,bestS), v=evalS(lv,c); if(v>=best){best=v;bestS=c;} }
-  console.log(`L${li+1} ${lv.name.padEnd(16)} max ${String(maxScore(lv)).padStart(3)}  baseline ${String(base).padStart(4)}  best found ${String(best).padStart(4)}  stars ${lv.stars.join('/')}  impulse ${impulseUsed(bestS).toFixed(1)}/${lv.budget}`);
+  const f=finalScore(lv,scoreOf(simulate(lv,bestS)).total,impulseUsed(bestS));
+  console.log(`L${li+1} ${lv.name.padEnd(16)} max stones ${String(maxScore(lv)).padStart(3)}  baseline ${String(base).padStart(4)} (${starsFor(lv,base)}★)  best found ${String(best).padStart(5)} = ${f.stone} stones + ${f.bonus} bonus (${impulseUsed(bestS).toFixed(1)}/${lv.budget} N·s)  stars ${lv.stars.join('/')}`);
 });

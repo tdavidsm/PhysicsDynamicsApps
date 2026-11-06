@@ -219,7 +219,9 @@
     <li><b>Setup:</b> drag a green stone to move it. Drag the <b>tip of its arrow</b> to aim and set the force, or use the controls under the ice. Dashed lines show where each stone would end up if nothing hit it.</li>
     <li>You only have so much <b>impulse</b> (force × time, in N·s) to share between your green stones. A push changes a stone's speed by <b>Δv = F·Δt ÷ m</b>, so the same push moves a light stone more than a heavy one.</li>
     <li>Press <b>▶ Run</b>. Every stone starts with its own velocity, your pushes happen on schedule, and stones bounce off each other. There's no friction, so a moving stone <b>keeps moving</b> until something hits it.</li>
-    <li>When the clock reaches the level's time, everything <b>freezes</b> and the score is counted. Earn ★ to unlock the next level. ★★★ takes a nearly perfect plan.</li>
+    <li>When the clock reaches the level's time, everything <b>freezes</b> and the stone points are counted.</li>
+    <li><b>⚡ Efficiency bonus:</b> impulse you <b>don't</b> use makes your score bigger. Bonus = stone points × the share of the budget left unused. Example: 6 stone points using 2.5 of 10 N·s leaves 75% unused, so the bonus is +4.5 and the score is 10.5. There's no bonus unless your stone points are above 0.</li>
+    <li>Earn ★ to unlock the next level. ★★★ takes the right result <b>and</b> a thrifty plan.</li>
     <li>The <b>log</b> keeps every run, so you can compare plans.</li>
   </ul>
   <button class="btn" id="startPlay" style="width:100%;margin-top:14px">Start playing 🥌</button>
@@ -245,46 +247,46 @@ function zoneMult(x,y){ const d=Math.hypot(x,y); return d<=ARENA.inner?3:d<=AREN
 
 /* Each level: T = run time (s), budget = total impulse for all green pushes (N·s),
    Fmax = largest force (N), tmax = longest push (s), placeMin = green stones must sit fully outside this radius.
-   stars = scores needed for ★, ★★, ★★★ (checked by tools/solve.js). */
+   stars = final scores (stone points + efficiency bonus) needed for ★, ★★, ★★★ (checked by tools/solve.js). */
 const LEVELS=[
-  { name:'First Push', T:10, budget:10, Fmax:10, tmax:2, placeMin:3, stars:[2,6,6],
+  { name:'First Push', T:10, budget:10, Fmax:10, tmax:2, placeMin:3, stars:[2,6,8],
     goal:'Push the <b>gold</b> stone into the <b>center circle</b>, and have it <b>still there</b> at 10 s.',
     tip:'No friction: once the gold stone is moving it never slows down. A gentle push wins.',
     greens:[{m:2,x:-5,y:-3}],
     others:[{k:'gold',m:2,x:6.8,y:1.5}] },
-  { name:'Clear the Center', T:10, budget:14, Fmax:10, tmax:2, placeMin:3, stars:[1,3,3],
+  { name:'Clear the Center', T:10, budget:14, Fmax:10, tmax:2, placeMin:3, stars:[1,3,4],
     goal:'Knock the <b>red</b> stone all the way out past the big circle, and get the <b>gold</b> one into the center.',
     tip:'A red stone in the center costs ×3. Out past the big circle, it costs nothing.',
     greens:[{m:2,x:-5,y:2},{m:2,x:4,y:-4.5}],
     others:[{k:'red',m:2,x:0.5,y:0.8},{k:'gold',m:1,x:-1,y:-4.6}] },
-  { name:'Heavy and Light', T:15, budget:18, Fmax:12, tmax:3, placeMin:3, stars:[3,6,9],
+  { name:'Heavy and Light', T:15, budget:18, Fmax:12, tmax:3, placeMin:3, stars:[3,9,12.5],
     goal:'The 6 kg red stone is <b>heavy</b>. Move it out, and bring both gold stones into the center.',
     tip:'Δv = F·Δt ÷ m. The same push barely moves a heavy stone. A fast green stone can hand its momentum over in a collision.',
     greens:[{m:1,x:-5,y:4},{m:2,x:5,y:-4},{m:4,x:-6,y:-3}],
     others:[{k:'red',m:6,x:0.3,y:-0.4},{k:'gold',m:1,x:4.2,y:3},{k:'gold',m:3,x:-4.5,y:0}] },
-  { name:'Moving Targets', T:15, budget:18, Fmax:12, tmax:3, placeMin:3, stars:[3,9,12],
+  { name:'Moving Targets', T:15, budget:18, Fmax:12, tmax:3, placeMin:3, stars:[3,12,16.5],
     goal:'Two stones are already sliding. The gold one will <b>overshoot</b> and the red one is headed for the center. Fix both.',
     tip:'Follow the dashed lines: they show where each stone ends up at 15 s if nothing hits it. Use the start time to meet a moving stone.',
     greens:[{m:2,x:0,y:-6},{m:2,x:0,y:6.5}],
     others:[{k:'gold',m:3,x:-7.5,y:1.5,vx:0.9},{k:'red',m:3,x:6.5,y:-1.2,vx:-0.45},{k:'gold',m:1,x:2.5,y:4.2}] },
-  { name:'Crossing Paths', T:20, budget:22, Fmax:12, tmax:3, placeMin:4.5, stars:[2,5,7],
+  { name:'Crossing Paths', T:20, budget:22, Fmax:12, tmax:3, placeMin:4.5, stars:[2,7,10],
     goal:'A gold and a red stone are both sliding toward the center. Green stones must start <b>outside the dashed circle</b>.',
     tip:'Momentum adds as vectors. A sideways hit changes direction without needing to stop the stone.',
     greens:[{m:2,x:6,y:5},{m:3,x:-6,y:5},{m:2,x:6.5,y:-5}],
     others:[{k:'gold',m:2,x:0,y:-7.5,vy:0.35},{k:'red',m:4,x:-7.5,y:0,vx:0.35},{k:'gold',m:1,x:4.5,y:4.5},{k:'red',m:1,x:3.5,y:-3.5}] },
-  { name:'Rush Hour', T:20, budget:22, Fmax:15, tmax:3, placeMin:6, stars:[3,7,11],
+  { name:'Rush Hour', T:20, budget:22, Fmax:15, tmax:3, placeMin:6, stars:[3,11,15],
     goal:'Five stones on the move. Your green stones must start <b>outside the big circle</b>.',
     tip:'You can\'t fix everything. Look for the pushes that are worth the most points per N·s.',
     greens:[{m:2,x:-7.5,y:-3},{m:2,x:7.5,y:3},{m:3,x:0,y:-7.8}],
     others:[{k:'gold',m:2,x:-4,y:7,vx:0.25,vy:-0.3},{k:'gold',m:3,x:7,y:-5,vx:-0.2,vy:0.15},
             {k:'red',m:2,x:-6,y:-6,vx:0.3,vy:0.35},{k:'red',m:3,x:5,y:5,vx:-0.15,vy:-0.2},{k:'red',m:1,x:0,y:0}] },
-  { name:'The Heavyweight', T:20, budget:26, Fmax:15, tmax:4, placeMin:6, stars:[4,10,16],
+  { name:'The Heavyweight', T:20, budget:26, Fmax:15, tmax:4, placeMin:6, stars:[4,16,22],
     goal:'An 8 kg red stone is heading for the center and the big gold stone sitting there.',
     tip:'Changing the heavyweight\'s momentum takes a big impulse. Is it cheaper to move the gold out of its way?',
     greens:[{m:2,x:-6.5,y:4},{m:2,x:6.5,y:-4},{m:4,x:0,y:-7.8}],
     others:[{k:'red',m:8,x:-8,y:-2,vx:0.4,vy:0.1},{k:'gold',m:4,x:0.5,y:0.3},
             {k:'gold',m:2,x:5,y:-2,vx:-0.1,vy:0.05},{k:'red',m:2,x:3,y:6,vx:-0.1,vy:-0.25}] },
-  { name:'Grand Finale', T:25, budget:30, Fmax:15, tmax:4, placeMin:6, stars:[5,12,16],
+  { name:'Grand Finale', T:25, budget:30, Fmax:15, tmax:4, placeMin:6, stars:[5,16,22],
     goal:'Everything at once: seven moving and still stones, four green stones, 25 seconds.',
     tip:'Plan one push at a time and run often. The log helps you compare.',
     greens:[{m:1,x:-7.5,y:4},{m:2,x:7.5,y:-4},{m:3,x:3.5,y:7.3},{m:2,x:-4,y:-7.5}],
@@ -341,8 +343,14 @@ function validSpot(lv,setup,i,x,y){
   for(const o of lv.others){ if(Math.hypot(o.x-x,o.y-y)<r+radiusFor(o.m)+0.05) return false; }
   return true;
 }
-function starsFor(lv,score){ return lv.stars.filter(s=>score>=s).length; }
-if(typeof module!=='undefined') module.exports={ARENA,DT,LEVELS,radiusFor,zoneMult,maxScore,defaultSetup,impulseUsed,makeStones,step,scoreOf,simulate,validSpot,starsFor};
+/* Efficiency bonus: stone points × fraction of the impulse budget left unused (only when stone points are above 0). */
+function finalScore(lv,stonePts,used){
+  const unused=Math.max(0,lv.budget-used)/lv.budget;
+  const bonus=stonePts>0?Math.round(stonePts*unused*10)/10:0;
+  return {stone:stonePts, unused, bonus, total:Math.round((stonePts+bonus)*10)/10};
+}
+function starsFor(lv,score){ return lv.stars.filter(s=>score>=s-1e-9).length; }
+if(typeof module!=='undefined') module.exports={ARENA,DT,LEVELS,radiusFor,zoneMult,maxScore,defaultSetup,impulseUsed,makeStones,step,scoreOf,finalScore,simulate,validSpot,starsFor};
 </script>
 
 <script>
@@ -402,7 +410,7 @@ function showBrief(){
   showPanel(`<div class="banner">Level ${state.li+1} · ${lv.name}</div>
     <p class="ptext">${lv.goal}</p>
     <div class="worked">⏱ Runs for <b>${lv.T} s</b> · Impulse budget <b>${lv.budget} N·s</b> · Max force <b>${lv.Fmax} N</b> · Longest push <b>${lv.tmax} s</b><br>
-    ★ ${lv.stars[0]} · ★★ ${lv.stars[1]} · ★★★ ${lv.stars[2]} points (most possible: ${maxScore(lv)})</div>
+    ★ ${lv.stars[0]} · ★★ ${lv.stars[1]} · ★★★ ${lv.stars[2]} points (perfect stones: ${maxScore(lv)}, plus your efficiency bonus)</div>
     <p class="ptext muted">💡 ${lv.tip}</p>`,[{label:'Plan my pushes',fn:hidePanel,grow:true}],{left:true});
 }
 function toSetup(){
@@ -416,15 +424,15 @@ function run(){
   hidePanel(); renderCtrl();
 }
 function finish(){
-  const lv=LV(), sc=scoreOf(state.stones), stars=starsFor(lv,sc.total);
+  const lv=LV(), sc=scoreOf(state.stones), used=impulseUsed(state.setup), fs=finalScore(lv,sc.total,used), stars=starsFor(lv,fs.total);
   state.phase='done'; state.result=sc;
   const prevUnlocked=LEVELS.map((_,i)=>unlocked(i));
   if(stars>state.stars[state.li]) state.stars[state.li]=stars;
-  if(state.best[state.li]==null||sc.total>state.best[state.li]) state.best[state.li]=sc.total;
+  if(state.best[state.li]==null||fs.total>state.best[state.li]) state.best[state.li]=fs.total;
   save();
   const gold=sc.items.filter(it=>it.s.kind==='gold').reduce((a,it)=>a+it.pts,0);
   const red=sc.items.filter(it=>it.s.kind==='red').reduce((a,it)=>a+it.pts,0);
-  state.log.push({lvl:state.li+1,imp:impulseUsed(state.setup),gold,red,total:sc.total,stars});
+  state.log.push({lvl:state.li+1,imp:used,gold,red,bonus:fs.bonus,total:fs.total,stars});
   renderLog(); renderTabs(); renderCtrl(); renderLevelCard();
   const zn=m=>m===3?'center ×3':m===1?'ring ×1':'out ×0';
   const rows=sc.items.slice().sort((a,b)=>(a.s.kind>b.s.kind?1:-1)||b.s.m-a.s.m).map(it=>
@@ -438,8 +446,10 @@ function finish(){
   showPanel(`<div class="banner">${head}</div>
     <div class="bigstars">${starStr(stars)}</div>
     <table class="score"><tr><th>Stone</th><th>Zone at ${lv.T} s</th><th>Points</th></tr>${rows}
-      <tr class="tot"><td>Score</td><td></td><td class="${sc.total>0?'ok':sc.total<0?'no':''}">${sgn(sc.total)}</td></tr></table>
-    <div class="worked">Needed: ★ ${lv.stars[0]} · ★★ ${lv.stars[1]} · ★★★ ${lv.stars[2]}. Impulse used: <b>${f1(impulseUsed(state.setup))} of ${lv.budget} N·s</b>.
+      <tr><td><b>Stone points</b></td><td></td><td class="${sc.total>0?'ok':sc.total<0?'no':''}"><b>${sgn(sc.total)}</b></td></tr>
+      <tr><td>⚡ Efficiency bonus</td><td>${sc.total>0?sgn(sc.total)+' × '+Math.round(fs.unused*100)+'% unused':'needs stone points above 0'}</td><td class="${fs.bonus>0?'ok':''}">${sgn(fs.bonus)}</td></tr>
+      <tr class="tot"><td>Score</td><td></td><td class="${fs.total>0?'ok':fs.total<0?'no':''}">${sgn(fs.total)}</td></tr></table>
+    <div class="worked">Needed: ★ ${lv.stars[0]} · ★★ ${lv.stars[1]} · ★★★ ${lv.stars[2]}. Impulse used: <b>${f1(used)} of ${lv.budget} N·s</b> (${Math.round(fs.unused*100)}% left unused).
       ${newly?'<br><b style="color:var(--accent)">Level '+(state.li+2)+' unlocked!</b>':''}
       ${stars===0?'<br>Tip: follow the dashed ghost paths to see where each stone is headed.':''}</div>`,btns);
 }
@@ -460,7 +470,8 @@ function renderLevelCard(){
       <span><i class="dot" style="background:var(--red)"></i>− mass × zone</span>
     </div>
     <div class="hintline">Zones: center <b>×3</b> · ring <b>×1</b> · outside the big circle <b>×0</b>.<br>
-      ★ ${lv.stars[0]} · ★★ ${lv.stars[1]} · ★★★ ${lv.stars[2]} points (most possible ${maxScore(lv)}).<br>💡 ${lv.tip}</div>
+      ⚡ Efficiency bonus = stone points × % of impulse left unused.<br>
+      ★ ${lv.stars[0]} · ★★ ${lv.stars[1]} · ★★★ ${lv.stars[2]} points (perfect stones: ${maxScore(lv)} before the bonus).<br>💡 ${lv.tip}</div>
     <div class="btnrow"><button class="btn secondary" id="briefBtn">Show briefing</button></div>`;
   $('#briefBtn').onclick=showBrief;
 }
@@ -506,7 +517,8 @@ function renderCtrl(){
       <div><div class="k">Δv = F·Δt ÷ m</div><div class="v">${f2(J/g.m)} m/s</div></div>
     </div>
     <div class="budget"><div class="bar"><div class="fill" style="width:${clamp(used/lv.budget*100,0,100)}%"></div></div>
-      <div class="txt"><span>Impulse used (all green stones)</span><span>${f1(used)} / ${lv.budget} N·s</span></div></div>
+      <div class="txt"><span>Impulse used (all green stones)</span><span>${f1(used)} / ${lv.budget} N·s</span></div>
+      <div class="txt"><span>⚡ Efficiency bonus if you score</span><span id="effTxt">stone points × ${Math.round((1-used/lv.budget)*100)}%</span></div></div>
     <button class="btn big" id="runBtn">▶ Run ${lv.T} s</button>
     <div class="btnrow">
       <button class="btn secondary ${state.ghost?'on':''}" id="ghostBtn">Ghost paths: ${state.ghost?'on':'off'}</button>
@@ -535,14 +547,15 @@ function renderCtrlVals(){
   d[0].textContent=`${f2(p.F/g.m)} m/s²`; d[1].textContent=`${f1(J)} N·s`; d[2].textContent=`${f2(J/g.m)} m/s`;
   $('#ctrlCard .budget .fill').style.width=clamp(used/lv.budget*100,0,100)+'%';
   $('#ctrlCard .budget .txt span:last-child').textContent=`${f1(used)} / ${lv.budget} N·s`;
+  $('#effTxt').textContent=`stone points × ${Math.round((1-used/lv.budget)*100)}%`;
   state.stones=makeStones(lv,state.setup);
 }
 
 /* ---------- log ---------- */
 function renderLog(){
   if(!state.log.length){ $('#logBox').innerHTML='<div class="emptylog">No runs yet. Plan your pushes and press ▶ Run.</div>'; return; }
-  $('#logBox').innerHTML=`<div class="logscroll"><table class="log"><thead><tr><th>#</th><th>Lvl</th><th>Impulse</th><th>Gold</th><th>Red</th><th>Score</th><th>★</th></tr></thead><tbody>
-    ${state.log.map((r,k)=>`<tr><td>${k+1}</td><td>${r.lvl}</td><td>${f1(r.imp)}</td><td class="au">${sgn(r.gold)}</td><td class="no">${sgn(r.red)}</td>
+  $('#logBox').innerHTML=`<div class="logscroll"><table class="log"><thead><tr><th>#</th><th>Lvl</th><th>Impulse</th><th>Gold</th><th>Red</th><th>Bonus</th><th>Score</th><th>★</th></tr></thead><tbody>
+    ${state.log.map((r,k)=>`<tr><td>${k+1}</td><td>${r.lvl}</td><td>${f1(r.imp)}</td><td class="au">${sgn(r.gold)}</td><td class="no">${sgn(r.red)}</td><td class="ok">${sgn(r.bonus)}</td>
     <td class="${r.total>0?'ok':r.total<0?'no':''}">${sgn(r.total)}</td><td>${'★'.repeat(r.stars)||'–'}</td></tr>`).join('')}</tbody></table></div>`;
   const sc=$('#logBox .logscroll'); sc.scrollTop=sc.scrollHeight;
 }
@@ -689,7 +702,7 @@ function draw(){
   ctx.fillStyle='#9fb0d6'; ctx.textAlign='left'; ctx.textBaseline='bottom'; ctx.font='600 11px system-ui,sans-serif'; ctx.fillText('1 m',bx,by-6);
   // live score while running
   if(state.phase==='run'){ const sc=scoreOf(st).total; ctx.textAlign='right'; ctx.textBaseline='top'; ctx.font='800 18px system-ui,sans-serif';
-    ctx.fillStyle=sc>0?'#8ff0b6':sc<0?'#ff8b9b':'#eaf0ff'; ctx.fillText(`Score now ${sgn(sc)}`,W-14,16); }
+    ctx.fillStyle=sc>0?'#8ff0b6':sc<0?'#ff8b9b':'#eaf0ff'; ctx.fillText(`Stone points now ${sgn(sc)}`,W-14,16); }
 }
 
 /* ---------- pointer input (setup only) ---------- */
