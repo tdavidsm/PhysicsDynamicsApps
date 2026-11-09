@@ -1020,7 +1020,7 @@ function frame(now){
     const lv=LV(), N=Math.round(lv.T/DT);
     state.acc+=dt*state.speed;
     let k=Math.round(state.t/DT);
-    while(state.acc>=DT && k<N){ step(state.stones,k*DT,DT); k++; state.acc-=DT; }
+    while(state.acc>=DT && k<N){ step(state.stones,k*DT,DT,lv); k++; state.acc-=DT; }
     state.t=k*DT;
     if(state.t-state.lastTrail>=0.1){ state.lastTrail=state.t; state.stones.forEach((s,j)=>state.trails[j].push([s.x,s.y])); }
     if(k>=N){ state.t=lv.T; finish(); }
