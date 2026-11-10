@@ -44,42 +44,51 @@ A top-down puzzle game on frictionless ice. Students plan pushes for their green
 | 7 | The Heavyweight | 20 s | 26 N·s | An 8 kg red stone on a collision course with the big gold stone. |
 | 8 | Grand Finale | 25 s | 30 N·s | Seven stones and four greens. |
 
-## World 2 · Strange Ice (levels 9–24)
-Unlocks after level 8. Each obstacle shows a different idea about force and motion:
+## World 2 · Strange Ice (levels 9–28)
+Unlocks after level 8. Levels 9–12 add only **forces** (sandpaper and wind), so they pair with a forces unit (see the worksheet below). Later levels bring in the other obstacles. Each obstacle shows a different idea about force and motion:
 
 | Obstacle | What it does | The physics |
 |----------|--------------|-------------|
-| 🌀 **Gravity well** | Pulls every stone toward it, harder up close. | Same *acceleration* for every mass (like real gravity), `a = GM ÷ r²`. Orbits and slingshots. |
-| 🟫 **Rough patch** | Slows sliding stones until they stop. | Kinetic friction: same deceleration `μg` for every mass. Stopping distance `v² ÷ 2μg`. |
-| 💨 **Wind zone** | Pushes every stone inside it one way. | Same *force* for every mass, so `a = F ÷ m`: light stones get blown around more. |
+| 🟫 **Sandpaper** | Slows sliding stones until they stop, and can hold a stopped stone still against a weak wind. | Friction opposes motion: same deceleration `μg` for every mass. |
+| 💨 **Wind zone** | Pushes every stone inside it one way. | Same *force* for every mass, so light stones get blown around more. A headwind acts like air resistance. |
+| 🌀 **Gravity well** | Pulls every stone toward it, harder up close. | Same *acceleration* for every mass (like real gravity). Orbits and slingshots. |
 | 🕳️ **Pit** | A stone whose center slides over it falls in and stays. | It still scores for the zone it's in, so a pit in a target can lock in gold *or* red. |
-| 🟣 **Sticky stone** | Glues onto anything it touches. | Perfectly inelastic collision: momentum conserved, kinetic energy lost. Glued stones move as one. |
-| 🎯 **New rinks and targets** | Rectangular rinks, ring-shaped (donut) zones, twin targets, a ×5 zone. | A stone scores the highest zone its center is in. |
+| 🟣 **Sticky stone** | Glues onto anything it touches. | Perfectly inelastic collision: glued stones move as one. |
+| 🔘 **Bumper / wall** | Fixed posts and walls that stones bounce off. Pink kickers add speed. | The bumper pushes straight out from its surface, so a stone leaves at the angle it came in. |
+| 🔁 **Teleporter** | Matching colored rings: in one, out the other. | Same speed and direction on the way out. |
+| 🎯 **New rinks and targets** | Rectangular rinks, ring-shaped zones, twin targets, a ×5 zone. | A stone scores the highest zone its center is in. |
 
-| # | Level | Time | Impulse budget | What's new |
-|---|-------|------|----------------|------------|
-| 9 | Gravity Well | 15 s | 14 N·s | A well pulls everything toward it. |
-| 10 | Slingshot | 20 s | 14 N·s | An off-center target with a well in the middle. |
-| 11 | Rough Patch | 15 s | 16 N·s | Friction covers the center; a red stone will stop there. |
-| 12 | Sticky Situation | 15 s | 16 N·s | Gray sticky stones (worth 0) glue to whatever touches them. |
-| 13 | Crosswind | 15 s | 16 N·s | Rectangular rink; a wind strip between you and a square target. |
-| 14 | Into the Pit | 15 s | 14 N·s | Pits: dump reds out of play, lock a gold in the center pit. |
-| 15 | Twin Targets | 15 s | 16 N·s | Two ×3 targets on a rectangular rink. |
-| 16 | Orbit | 20 s | 16 N·s | A ring-shaped ×3 zone around a strong well; a gold stone in orbit. |
-| 17 | Glue Trap | 15 s | 18 N·s | Sticky red stones that grab your green stones. |
-| 18 | Downhill | 15 s | 20 N·s | Wind across the whole rink: the 6 kg red barely moves, 1 kg stones slide away. |
-| 19 | Pit Stop | 15 s | 14 N·s | A pit in the middle of the target. |
-| 20 | Mud Donut | 15 s | 16 N·s | A ring target with mud patches to park stones on. |
-| 21 | Double Well | 15 s | 16 N·s | Two wells; the center is an unstable balance point. |
-| 22 | Storm | 20 s | 22 N·s | Four winds swirl clockwise; only a calm cross in the middle. |
-| 23 | Minefield | 20 s | 22 N·s | Pits, mud and a sticky stone together. |
-| 24 | The Gauntlet | 25 s | 30 N·s | Everything at once, plus a tiny ×5 target on a mud patch. |
+| # | Level | Time | What's new |
+|---|-------|------|------------|
+| 9 | Sandpaper | 15 s | Friction covers the center; a red stone will stop there. |
+| 10 | Crosswind | 15 s | Rectangular rink; a wind strip blows down across your path. |
+| 11 | Headwind | 15 s | Wind blows against the motion, like air resistance. A 0.5 N push exactly balances it. |
+| 12 | Downhill | 15 s | Wind over the whole rink: light stones slide far, heavy ones barely move. Sandpaper on the target holds stones still. |
+| 13 | Gravity Well | 15 s | A well pulls everything toward it. |
+| 14 | Slingshot | 20 s | An off-center target with a well in the middle. |
+| 15 | Sticky Situation | 15 s | Gray sticky stones (worth 0). |
+| 16 | Into the Pit | 15 s | Pits: dump reds out of play, lock a gold in the center pit. |
+| 17 | Twin Targets | 15 s | Two ×3 targets on a rectangular rink. |
+| 18 | Orbit | 20 s | A ring-shaped ×3 zone around a strong well. |
+| 19 | Bank Shot | 15 s | Walls block the straight path; bounce off the long wall. |
+| 20 | Glue Trap | 15 s | Sticky red stones that grab your green stones. |
+| 21 | Pit Stop | 15 s | A pit in the middle of the target. |
+| 22 | Portals | 15 s | A wall splits the rink; teleporters are the only way across. |
+| 23 | Mud Donut | 15 s | A ring target with friction patches to park stones on. |
+| 24 | Double Well | 15 s | Two wells; the center is an unstable balance point. |
+| 25 | Storm | 20 s | Four winds swirl clockwise around a calm cross. |
+| 26 | Pinball | 20 s | Kicker bumpers and a teleporter. |
+| 27 | Minefield | 20 s | Pits, mud and a sticky stone together. |
+| 28 | The Gauntlet | 25 s | Everything at once, plus a tiny ×5 target on a mud patch. |
+
+Saved stars are stored per level, so reordering levels never moves a student's progress to the wrong level.
 
 Star thresholds are checked with `node tools/solve.js [iterations] [first last]`. It runs the same physics code as the game and reports, for each level, the score if the player does nothing (never enough for a star) and the best score, including the efficiency bonus, that a random search finds. In World 2, ★ / ★★ / ★★★ are set at about 20% / 45% / 70% of the best score found.
 
 ## Teaching notes
 - The **run log** records each attempt (level, impulse used, gold points, red points, efficiency bonus, score, stars) for comparing plans.
 - The efficiency bonus pushes students toward the *smallest* impulse that does the job, which means using collisions and momentum transfer instead of brute force.
+- A **forces worksheet for levels 1–12** (no momentum or impulse vocabulary) is kept as a Claude doc: https://claude.ai/artifact/PR1N6xpzNk9uv8neik3fEj
 - World 2 contrasts **same force** (wind: light stones accelerate more) with **same acceleration** (gravity wells and friction: every mass gets the same a).
 - Good discussion prompts: why does a 1 kg green stone move so much faster than a 4 kg one after the same push? Why does an equal-mass head-on hit stop the green stone dead? Why did the gold stone overshoot?
 - **🔑 Teacher unlock:** passcode **1253** unlocks every level on that device until the page reloads.
