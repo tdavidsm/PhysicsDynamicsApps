@@ -242,13 +242,15 @@
     <li>The <b>log</b> keeps every run, so you can compare plans.</li>
   </ul>
 
-  <h3>World 2 · Strange Ice (16 levels, unlocks after level 8)</h3>
+  <h3>World 2 · Strange Ice (20 levels, unlocks after level 8)</h3>
   <ul class="tips">
     <li>🌀 <b>Gravity wells</b> pull every stone toward them. Light and heavy stones get the same acceleration.</li>
-    <li>🟫 <b>Rough patches</b> (friction) slow sliding stones down until they stop.</li>
+    <li>🟫 <b>Sandpaper</b> (friction) slows sliding stones down until they stop.</li>
     <li>💨 <b>Wind zones</b> push every stone inside them with the same force, so light stones get blown around more.</li>
     <li>🕳️ <b>Pits</b> swallow any stone whose center slides over them. It stays there, and still scores.</li>
     <li>🟣 <b>Sticky stones</b> glue onto whatever they touch, and the two move as one heavier stone.</li>
+    <li>🔘 <b>Bumpers</b> are walls and posts that stones bounce off. Pink kickers fling them away even faster.</li>
+    <li>🔁 <b>Teleporters</b> come in matching pairs: in one ring, out the other, same speed and direction.</li>
     <li>🎯 New <b>rink and target shapes</b>: rectangles, rings, twin targets, even a ×5 zone.</li>
   </ul>
   <button class="btn" id="startPlay" style="width:100%;margin-top:14px">Start playing 🥌</button>
@@ -275,44 +277,44 @@ function radiusFor(m){ return 0.22*Math.sqrt(m)+0.18; }
    Fmax = largest force (N), tmax = longest push (s), placeMin = green stones must sit fully outside this radius.
    stars = final scores (stone points + efficiency bonus) needed for ★, ★★, ★★★ (checked by tools/solve.js). */
 const LEVELS=[
-  { name:'First Push', T:10, budget:10, Fmax:10, tmax:2, placeMin:3, stars:[2,6,8],
+  { id:'first-push', name:'First Push', T:10, budget:10, Fmax:10, tmax:2, placeMin:3, stars:[2,6,8],
     goal:'Push the <b>gold</b> stone into the <b>center circle</b>, and have it <b>still there</b> at 10 s.',
     tip:'No friction: once the gold stone is moving it never slows down. A gentle push wins.',
     greens:[{m:2,x:-5,y:-3}],
     others:[{k:'gold',m:2,x:6.8,y:1.5}] },
-  { name:'Clear the Center', T:10, budget:14, Fmax:10, tmax:2, placeMin:3, stars:[1,3,4],
+  { id:'clear-center', name:'Clear the Center', T:10, budget:14, Fmax:10, tmax:2, placeMin:3, stars:[1,3,4],
     goal:'Knock the <b>red</b> stone all the way out past the big circle, and get the <b>gold</b> one into the center.',
     tip:'A red stone in the center costs ×3. Out past the big circle, it costs nothing.',
     greens:[{m:2,x:-5,y:2},{m:2,x:4,y:-4.5}],
     others:[{k:'red',m:2,x:0.5,y:0.8},{k:'gold',m:1,x:-1,y:-4.6}] },
-  { name:'Heavy and Light', T:15, budget:18, Fmax:12, tmax:3, placeMin:3, stars:[3,9,12.5],
+  { id:'heavy-light', name:'Heavy and Light', T:15, budget:18, Fmax:12, tmax:3, placeMin:3, stars:[3,9,12.5],
     goal:'The 6 kg red stone is <b>heavy</b>. Move it out, and bring both gold stones into the center.',
     tip:'Δv = F·Δt ÷ m. The same push barely moves a heavy stone. A fast green stone can hand its momentum over in a collision.',
     greens:[{m:1,x:-5,y:4},{m:2,x:5,y:-4},{m:4,x:-6,y:-3}],
     others:[{k:'red',m:6,x:0.3,y:-0.4},{k:'gold',m:1,x:4.2,y:3},{k:'gold',m:3,x:-4.5,y:0}] },
-  { name:'Moving Targets', T:15, budget:18, Fmax:12, tmax:3, placeMin:3, stars:[3,12,16.5],
+  { id:'moving-targets', name:'Moving Targets', T:15, budget:18, Fmax:12, tmax:3, placeMin:3, stars:[3,12,16.5],
     goal:'Two stones are already sliding. The gold one will <b>overshoot</b> and the red one is headed for the center. Fix both.',
     tip:'Follow the dashed lines: they show where each stone ends up at 15 s if nothing hits it. Use the start time to meet a moving stone.',
     greens:[{m:2,x:0,y:-6},{m:2,x:0,y:6.5}],
     others:[{k:'gold',m:3,x:-7.5,y:1.5,vx:0.9},{k:'red',m:3,x:6.5,y:-1.2,vx:-0.45},{k:'gold',m:1,x:2.5,y:4.2}] },
-  { name:'Crossing Paths', T:20, budget:22, Fmax:12, tmax:3, placeMin:4.5, stars:[2,7,10],
+  { id:'crossing-paths', name:'Crossing Paths', T:20, budget:22, Fmax:12, tmax:3, placeMin:4.5, stars:[2,7,10],
     goal:'A gold and a red stone are both sliding toward the center. Green stones must start <b>outside the dashed circle</b>.',
     tip:'Momentum adds as vectors. A sideways hit changes direction without needing to stop the stone.',
     greens:[{m:2,x:6,y:5},{m:3,x:-6,y:5},{m:2,x:6.5,y:-5}],
     others:[{k:'gold',m:2,x:0,y:-7.5,vy:0.35},{k:'red',m:4,x:-7.5,y:0,vx:0.35},{k:'gold',m:1,x:4.5,y:4.5},{k:'red',m:1,x:3.5,y:-3.5}] },
-  { name:'Rush Hour', T:20, budget:22, Fmax:15, tmax:3, placeMin:6, stars:[3,11,15],
+  { id:'rush-hour', name:'Rush Hour', T:20, budget:22, Fmax:15, tmax:3, placeMin:6, stars:[3,11,15],
     goal:'Five stones on the move. Your green stones must start <b>outside the big circle</b>.',
     tip:'You can\'t fix everything. Look for the pushes that are worth the most points per N·s.',
     greens:[{m:2,x:-7.5,y:-3},{m:2,x:7.5,y:3},{m:3,x:0,y:-7.8}],
     others:[{k:'gold',m:2,x:-4,y:7,vx:0.25,vy:-0.3},{k:'gold',m:3,x:7,y:-5,vx:-0.2,vy:0.15},
             {k:'red',m:2,x:-6,y:-6,vx:0.3,vy:0.35},{k:'red',m:3,x:5,y:5,vx:-0.15,vy:-0.2},{k:'red',m:1,x:0,y:0}] },
-  { name:'The Heavyweight', T:20, budget:26, Fmax:15, tmax:4, placeMin:6, stars:[4,16,22],
+  { id:'heavyweight', name:'The Heavyweight', T:20, budget:26, Fmax:15, tmax:4, placeMin:6, stars:[4,16,22],
     goal:'An 8 kg red stone is heading for the center and the big gold stone sitting there.',
     tip:'Changing the heavyweight\'s momentum takes a big impulse. Is it cheaper to move the gold out of its way?',
     greens:[{m:2,x:-6.5,y:4},{m:2,x:6.5,y:-4},{m:4,x:0,y:-7.8}],
     others:[{k:'red',m:8,x:-8,y:-2,vx:0.4,vy:0.1},{k:'gold',m:4,x:0.5,y:0.3},
             {k:'gold',m:2,x:5,y:-2,vx:-0.1,vy:0.05},{k:'red',m:2,x:3,y:6,vx:-0.1,vy:-0.25}] },
-  { name:'Grand Finale', T:25, budget:30, Fmax:15, tmax:4, placeMin:6, stars:[5,16,22],
+  { id:'grand-finale', name:'Grand Finale', T:25, budget:30, Fmax:15, tmax:4, placeMin:6, stars:[5,16,22],
     goal:'Everything at once: seven moving and still stones, four green stones, 25 seconds.',
     tip:'Plan one push at a time and run often. The log helps you compare.',
     greens:[{m:1,x:-7.5,y:4},{m:2,x:7.5,y:-4},{m:3,x:3.5,y:7.3},{m:2,x:-4,y:-7.5}],
@@ -325,109 +327,146 @@ const RECT=(w,h,x=0,y=0)=>({type:'rect',x,y,w,h});
 const CIRC=(r,x=0,y=0)=>({type:'circle',x,y,r});
 const RING=(r1,r2,x=0,y=0)=>({type:'ring',x,y,r1,r2});
 const WORLD2=[
-  { name:'Gravity Well', T:15, budget:14, Fmax:10, tmax:2, stars:[2.5,6,9], isNew:['wells'],
+  { id:'gravity-well', name:'Gravity Well', T:15, budget:14, Fmax:10, tmax:2, stars:[2.5,6,9], isNew:['wells'],
     goal:'A <b>gravity well</b> pulls every stone toward it. Use it, or fight it.',
     tip:'Gravity gives light and heavy stones the same acceleration, and it pulls harder up close. Watch the curved ghost paths.',
     wells:[{x:3.5,y:-3.5,GM:0.8}], noPlace:[CIRC(3)],
     greens:[{m:2,x:-6,y:-3},{m:2,x:-3,y:6}],
     others:[{k:'gold',m:2,x:-5,y:2.5},{k:'red',m:3,x:-1.5,y:0.5},{k:'gold',m:1,x:6,y:3}] },
-  { name:'Slingshot', T:20, budget:14, Fmax:10, tmax:2, stars:[3.5,8,12], isNew:['zones'],
+  { id:'slingshot', name:'Slingshot', T:20, budget:14, Fmax:10, tmax:2, stars:[3.5,8,12], isNew:['zones'],
     goal:'The ×3 target is <b>off to the side</b> and a well sits in the middle. A red stone is about to fall through the target.',
     tip:'A stone passing close to a well speeds up on the way in and slows down on the way out.',
     zones:[{...CIRC(6),m:1},{...CIRC(2.2,3.5,3.5),m:3}], wells:[{x:0,y:0,GM:1.2}], noPlace:[CIRC(6)],
     greens:[{m:2,x:-7.5,y:-3},{m:1,x:-3,y:-7.5}],
     others:[{k:'gold',m:3,x:-4,y:4},{k:'gold',m:1,x:5,y:-5},{k:'red',m:3,x:5.5,y:5}] },
-  { name:'Rough Patch', T:15, budget:16, Fmax:12, tmax:2, stars:[2.5,5,8], isNew:['friction'],
-    goal:'The center is <b>rough</b>: anything sliding onto it slows down and stops. A red stone is on its way there.',
-    tip:'Friction gives every stone the same deceleration (μg), whatever its mass. On the patch, μ = 0.08, so a = 0.78 m/s².',
+  { id:'rough-patch', name:'Sandpaper', T:15, budget:16, Fmax:12, tmax:2, stars:[2.5,5,8], isNew:['friction'],
+    goal:'The center is covered in <b>sandpaper</b>: anything sliding onto it slows down and stops. A red stone is on its way there.',
+    tip:'Sandpaper rubs on a sliding stone and pushes back against its motion until it stops. On the plain ice, nothing slows a stone down.',
     friction:[{shape:CIRC(3),mu:0.08}], noPlace:[CIRC(3)],
     greens:[{m:2,x:-5,y:-4},{m:2,x:5,y:-4.5}],
     others:[{k:'red',m:3,x:-7,y:0.5,vx:0.6},{k:'gold',m:2,x:4.5,y:3},{k:'gold',m:1,x:-3.5,y:-6.5}] },
-  { name:'Sticky Situation', T:15, budget:16, Fmax:12, tmax:2, stars:[2,5,7.5], isNew:['sticky'],
+  { id:'sticky', name:'Sticky Situation', T:15, budget:16, Fmax:12, tmax:2, stars:[2,5,7.5], isNew:['sticky'],
     goal:'The <b>gray sticky stones</b> are worth nothing, but anything that touches one is glued to it.',
     tip:'Glued stones move together as one heavier stone: a perfectly inelastic collision. Momentum is conserved, but kinetic energy isn\'t.',
     noPlace:[CIRC(3)],
     greens:[{m:2,x:-6,y:-3},{m:2,x:6.5,y:-1}],
     others:[{k:'gray',m:3,x:-2.5,y:4,st:1},{k:'gray',m:2,x:3,y:-4.2,st:1},{k:'red',m:2,x:0.5,y:-0.5},{k:'red',m:1,x:-1,y:1.6},{k:'gold',m:2,x:5,y:2}] },
-  { name:'Crosswind', T:15, budget:16, Fmax:12, tmax:2, stars:[2,5,7.5], isNew:['wind','zones'],
+  { id:'crosswind', name:'Crosswind', T:15, budget:16, Fmax:12, tmax:2, stars:[2,5,7.5], isNew:['wind','zones'],
     goal:'A <b>wind</b> strip blows <b>down</b> between you and the square target. Aim high to make up for it.',
     tip:'Wind pushes every stone inside it with the same force, so light stones get blown off course more (a = F ÷ m).',
     field:RECT(22,13), zones:[{...RECT(16,10,1,0),m:1},{...RECT(4,4,6,0),m:3}],
     wind:[{shape:RECT(4,13,-1,0),fx:0,fy:-0.8}], noPlace:[RECT(16,10,1,0)],
     greens:[{m:2,x:-9,y:3},{m:2,x:-9,y:-3}],
     others:[{k:'gold',m:2,x:-5.5,y:3},{k:'gold',m:1,x:-5.5,y:-3.5},{k:'red',m:2,x:6,y:1}] },
-  { name:'Into the Pit', T:15, budget:14, Fmax:10, tmax:2, stars:[3,6.5,10], isNew:['pits'],
+  { id:'into-pit', name:'Into the Pit', T:15, budget:14, Fmax:10, tmax:2, stars:[3,6.5,10], isNew:['pits'],
     goal:'A stone that slides over a <b>pit</b> falls in and stays there. Dump the reds out of play, and get a gold stuck in the middle.',
     tip:'A stone in a pit still scores for the zone it\'s in, so the pit in the center circle is a gold trap worth ×3.',
     pits:[{x:7.3,y:0,r:0.9},{x:0,y:-1.8,r:0.65}], noPlace:[CIRC(3)],
     greens:[{m:2,x:-6,y:1},{m:2,x:0,y:-7}],
     others:[{k:'red',m:4,x:2,y:0.5},{k:'red',m:1,x:-1.5,y:1.5},{k:'gold',m:2,x:0,y:-4.8},{k:'gold',m:1,x:-5,y:-4}] },
-  { name:'Twin Targets', T:15, budget:16, Fmax:12, tmax:2, stars:[3,7,10.5], isNew:['zones'],
+  { id:'twin-targets', name:'Twin Targets', T:15, budget:16, Fmax:12, tmax:2, stars:[3,7,10.5], isNew:['zones'],
     goal:'A <b>rectangular rink</b> with <b>two</b> ×3 targets. One already has a red stone in it, and another red is drifting into the second.',
     tip:'Plan which target each gold should go to. The closer one isn\'t always cheaper.',
     field:RECT(22,13), zones:[{...RECT(20,11),m:1},{...CIRC(2.2,-5,0),m:3},{...CIRC(2.2,5,0),m:3}], noPlace:[CIRC(2.2,-5,0),CIRC(2.2,5,0)],
     greens:[{m:2,x:0,y:5},{m:2,x:0,y:-5},{m:1,x:-9.5,y:4.5}],
     others:[{k:'gold',m:2,x:-1,y:1},{k:'gold',m:3,x:8,y:4,vx:-0.2},{k:'red',m:2,x:-5,y:0.5},{k:'red',m:2,x:6,y:-3,vy:0.25}] },
-  { name:'Orbit', T:20, budget:16, Fmax:12, tmax:2, stars:[3.5,8,12], isNew:['zones'],
+  { id:'orbit', name:'Orbit', T:20, budget:16, Fmax:12, tmax:2, stars:[3.5,8,12], isNew:['zones'],
     goal:'The ×3 zone is a <b>ring</b> around a strong well. One gold stone is <b>orbiting</b> outside it.',
     tip:'A stone moving at just the right speed falls around the well forever: that\'s an orbit. Slowing it lets it fall inward.',
     zones:[{...CIRC(6.5),m:1},{...RING(2.5,4),m:3}], wells:[{x:0,y:0,GM:2}], noPlace:[CIRC(4)],
     greens:[{m:2,x:-7,y:-3},{m:2,x:6,y:-5}],
     others:[{k:'gold',m:2,x:0,y:5.5,vx:0.6},{k:'gold',m:1,x:-3.25,y:0},{k:'red',m:3,x:3.2,y:0,vy:0.75}] },
-  { name:'Glue Trap', T:15, budget:18, Fmax:12, tmax:2, stars:[1,2.5,4], isNew:['sticky'],
+  { id:'glue-trap', name:'Glue Trap', T:15, budget:18, Fmax:12, tmax:2, stars:[1,2.5,4], isNew:['sticky'],
     goal:'These <b>red stones are sticky</b>. Touch one with a green stone and they\'re glued together.',
     tip:'A green stone stuck to a red one can keep pushing. Start a long push early and it carries the red stone with it.',
     noPlace:[CIRC(3)],
     greens:[{m:2,x:-6,y:-2},{m:2,x:6,y:3},{m:1,x:-1,y:7}],
     others:[{k:'red',m:3,x:0.5,y:0,st:1},{k:'red',m:2,x:-3.8,y:3.8,st:1},{k:'gold',m:2,x:4.5,y:-3},{k:'gold',m:1,x:0,y:-6.8}] },
-  { name:'Downhill', T:15, budget:20, Fmax:12, tmax:2, stars:[5.5,12,19], isNew:['wind'],
-    goal:'A gentle wind blows <b>down across the whole rink</b>. Nothing stays put, and your green stones drift too.',
-    tip:'Same force on every stone: a 1 kg stone gets 6× the acceleration of a 6 kg stone. The heavy red will barely move.',
+  { id:'downhill', name:'Downhill', T:15, budget:20, Fmax:12, tmax:2, stars:[5.5,12,19], isNew:[],
+    goal:'A gentle wind blows <b>down across the whole rink</b>, so nothing stays put. Only the <b>sandpaper</b> on the target can hold a stone still.',
+    tip:'The wind pushes every stone with the same force, but light stones speed up much more than heavy ones. On the sandpaper, friction holds a stopped stone against the wind.',
     field:RECT(22,13), zones:[{...RECT(16,10),m:1},{...RECT(5,4),m:3}], wind:[{shape:RECT(22,13),fx:0,fy:-0.15}], noPlace:[RECT(16,10)],
+    friction:[{shape:RECT(5,4),mu:0.03}],
     greens:[{m:2,x:-6,y:5.7},{m:2,x:6,y:5.7},{m:3,x:-9.5,y:0}],
     others:[{k:'gold',m:1,x:-4,y:4},{k:'gold',m:5,x:3,y:5},{k:'red',m:1,x:0,y:4.5},{k:'red',m:6,x:-1.5,y:3.5}] },
-  { name:'Pit Stop', T:15, budget:14, Fmax:10, tmax:2, stars:[4.5,10,16], isNew:['pits'],
+  { id:'pit-stop', name:'Pit Stop', T:15, budget:14, Fmax:10, tmax:2, stars:[4.5,10,16], isNew:['pits'],
     goal:'A pit sits right in the <b>middle of the target</b>. Whatever falls in stays at ×3, good or bad.',
     tip:'A gold stone in the center pit can never be knocked out. Keep the reds away from it!',
     pits:[{x:0,y:0,r:0.9}], noPlace:[CIRC(3)],
     greens:[{m:2,x:-6,y:-4},{m:2,x:5,y:5}],
     others:[{k:'gold',m:3,x:-7,y:2.5,vx:0.8},{k:'gold',m:1,x:2,y:-6.8,vy:0.25},{k:'red',m:2,x:6,y:-1.2,vx:-0.5},{k:'red',m:1,x:0,y:5}] },
-  { name:'Mud Donut', T:15, budget:16, Fmax:12, tmax:2, stars:[4.5,10,15.5], isNew:['friction','zones'],
+  { id:'mud-donut', name:'Mud Donut', T:15, budget:16, Fmax:12, tmax:2, stars:[4.5,10,15.5], isNew:['friction','zones'],
     goal:'The ×3 zone is a <b>ring</b> with four <b>mud patches</b> on it. Stones that reach the mud stop there.',
     tip:'A stone stops on the mud after sliding v² ÷ (2μg). The mud is a perfect parking spot.',
     zones:[{...CIRC(7),m:1},{...RING(2.5,4.5),m:3}],
     friction:[0,1,2,3].map(k=>({shape:CIRC(1,3.5*Math.cos(Math.PI/4+k*Math.PI/2),3.5*Math.sin(Math.PI/4+k*Math.PI/2)),mu:0.12})), noPlace:[CIRC(4.5)],
     greens:[{m:2,x:-5.5,y:5},{m:2,x:5.5,y:-5},{m:1,x:6,y:4}],
     others:[{k:'gold',m:2,x:0,y:0},{k:'gold',m:3,x:-6,y:0},{k:'red',m:2,x:3.5,y:0},{k:'red',m:3,x:0,y:6,vy:-0.5}] },
-  { name:'Double Well', T:15, budget:16, Fmax:12, tmax:2, stars:[3.5,8,12.5], isNew:['wells'],
+  { id:'double-well', name:'Double Well', T:15, budget:16, Fmax:12, tmax:2, stars:[3.5,8,12.5], isNew:['wells'],
     goal:'<b>Two wells</b> pull from opposite sides of the target. The middle is a balance point, but not a stable one.',
     tip:'Exactly between equal wells the pulls cancel. Move a little off-center and one well wins.',
     wells:[{x:-4.5,y:0,GM:1.2},{x:4.5,y:0,GM:1.2}], noPlace:[CIRC(3)],
     greens:[{m:2,x:-6.5,y:4.5},{m:2,x:6.5,y:-4.5},{m:1,x:0,y:7.8}],
     others:[{k:'gold',m:2,x:-1.5,y:0},{k:'red',m:2,x:0,y:3.5},{k:'gold',m:1,x:0,y:-5},{k:'red',m:1,x:2,y:-1}] },
-  { name:'Storm', T:20, budget:22, Fmax:12, tmax:3, stars:[4.5,10,15.5], isNew:['wind'],
+  { id:'storm', name:'Storm', T:20, budget:22, Fmax:12, tmax:3, stars:[4.5,10,15.5], isNew:['wind'],
     goal:'Four wind zones swirl <b>clockwise</b> around the rink. Only the cross through the middle is calm.',
     tip:'A stone that rides the wind gets carried all the way around. Push it into the calm cross to stop the ride.',
     field:RECT(22,14), zones:[{...RECT(16,10),m:1},{...CIRC(2.5),m:3}], noPlace:[RECT(16,10)],
     wind:[{shape:RECT(10,6,-6,4),fx:0.12,fy:0},{shape:RECT(10,6,6,4),fx:0,fy:-0.12},{shape:RECT(10,6,6,-4),fx:-0.12,fy:0},{shape:RECT(10,6,-6,-4),fx:0,fy:0.12}],
     greens:[{m:2,x:-9.5,y:0},{m:2,x:9.5,y:0},{m:2,x:0,y:-6.3}],
     others:[{k:'gold',m:2,x:-6,y:4},{k:'gold',m:3,x:5,y:-4},{k:'red',m:2,x:5,y:4},{k:'red',m:3,x:-1.5,y:-1.5},{k:'gold',m:1,x:-6,y:-4}] },
-  { name:'Minefield', T:20, budget:22, Fmax:12, tmax:3, stars:[2,5,7.5], isNew:[],
+  { id:'minefield', name:'Minefield', T:20, budget:22, Fmax:12, tmax:3, stars:[2,5,7.5], isNew:[],
     goal:'Pits, mud and a sticky stone, all at once. Watch your step.',
     tip:'Pits in the ring lock a stone in at ×1 for good. Use them for reds that you can\'t push all the way out.',
     pits:[{x:-2,y:4.5,r:0.7},{x:4.5,y:-1.5,r:0.7},{x:-4,y:-3.5,r:0.7}], friction:[{shape:CIRC(2),mu:0.06}], noPlace:[CIRC(4.5)],
     greens:[{m:2,x:-6,y:5.5},{m:2,x:6,y:-5.5},{m:3,x:-1,y:-7.8}],
     others:[{k:'gold',m:2,x:-7,y:1,vx:0.4},{k:'gold',m:1,x:6,y:4},{k:'red',m:3,x:1,y:1},{k:'red',m:2,x:5,y:-5,vx:-0.2,vy:0.2},{k:'gray',m:2,x:-1,y:-2.6,st:1}] },
-  { name:'The Gauntlet', T:25, budget:30, Fmax:15, tmax:4, stars:[7,16,25], isNew:[],
+  { id:'gauntlet', name:'The Gauntlet', T:25, budget:30, Fmax:15, tmax:4, stars:[6,13,20.5], isNew:[],
     goal:'Everything at once. There\'s a tiny <b>×5</b> target on a mud patch, worth the trip.',
-    tip:'Stones that reach the ×5 mud stop there. The well, wind, pit and sticky stone all stand in the way.',
+    tip:'Stones that reach the ×5 mud stop there. The well, wind, pit, bumper, teleporter and sticky stone all stand in the way.',
+    bumpers:[{x:6.5,y:-3,r:0.5,kick:0.6}], portals:[{a:{x:-8,y:-5.5},b:{x:8,y:5.5},r:0.7}],
     field:RECT(24,14), zones:[{...RECT(16,10),m:1},{...CIRC(2.2,4,0),m:3},{...CIRC(1.6,-4,0),m:5}],
     wells:[{x:0,y:3.5,GM:1}], wind:[{shape:RECT(2,14,0.5,0),fx:0,fy:-0.5}], pits:[{x:0,y:-3,r:0.8}],
     friction:[{shape:CIRC(1.6,-4,0),mu:0.1}], noPlace:[RECT(16,10)],
     greens:[{m:2,x:-11,y:-1},{m:2,x:11,y:1},{m:2,x:0,y:-6.3},{m:1,x:-11,y:3}],
     others:[{k:'gold',m:3,x:-9,y:4,vx:0.3,vy:-0.1},{k:'gold',m:2,x:9,y:-4,vx:-0.35,vy:0.1},{k:'gold',m:1,x:0,y:6},
             {k:'red',m:4,x:4,y:0.5},{k:'red',m:2,x:-6,y:-4,vx:0.2,vy:0.2},{k:'red',m:1,x:-3.6,y:-0.5},{k:'gray',m:2,x:2,y:-2,st:1}] },
+  { id:'headwind', name:'Headwind', T:15, budget:16, Fmax:10, tmax:6, stars:[3,7,10.5], isNew:[],
+    goal:'The wind blows <b>against</b> you, like air resistance. Get the golds through it and into the square, and knock the red out.',
+    tip:'The wind pushes left on every stone in the strip. A push that is too gentle gets blown back. Try parking a green in the wind and pushing it with exactly 0.5 N to the right.',
+    field:RECT(22,12), zones:[{...RECT(10,10,6,0),m:1},{...RECT(4,4,7,0),m:3}], wind:[{shape:RECT(6,12,-1,0),fx:-0.5,fy:0}], noPlace:[RECT(10,10,6,0)],
+    greens:[{m:2,x:-8,y:3},{m:2,x:-8,y:-3}],
+    others:[{k:'gold',m:1,x:-5.5,y:3},{k:'gold',m:3,x:-5.5,y:-3},{k:'red',m:2,x:7,y:0.5}] },
+  { id:'bank-shot', name:'Bank Shot', T:15, budget:14, Fmax:10, tmax:2, stars:[2.5,5,8], isNew:['bumpers'],
+    goal:'A <b>wall</b> blocks the straight path to the center. Bounce your shots off the long wall above it.',
+    tip:'A stone bounces off a wall like light off a mirror: it leaves at the same angle it came in.',
+    walls:[{x1:-3.5,y1:-3,x2:-3.5,y2:3},{x1:-6,y1:6.5,x2:4,y2:6.5}], bumpers:[{x:3.5,y:-3.5,r:0.5},{x:0,y:-6,r:0.5}], noPlace:[CIRC(3)],
+    greens:[{m:2,x:-7,y:3},{m:2,x:-7,y:-3}],
+    others:[{k:'gold',m:2,x:-6.5,y:0},{k:'gold',m:1,x:5,y:3},{k:'red',m:3,x:0.5,y:0.3}] },
+  { id:'portals', name:'Portals', T:15, budget:14, Fmax:10, tmax:2, stars:[2,5,7.5], isNew:['portals'],
+    goal:'A wall cuts the rink in half and the target is on the far side. <b>Teleporters</b> are the only way through.',
+    tip:'A stone that enters a ring pops out of the ring with the same color, still moving the same speed and direction.',
+    field:RECT(22,12), zones:[{...RECT(8,10,7,0),m:1},{...CIRC(2.2,7,0),m:3}], walls:[{x1:2,y1:-6,x2:2,y2:6}],
+    portals:[{a:{x:-3,y:3.5},b:{x:4.5,y:-3.5},r:0.8},{a:{x:-3,y:-3.5},b:{x:4.5,y:3.5},r:0.8}], noPlace:[RECT(10,12,6,0)],
+    greens:[{m:2,x:-9,y:2},{m:2,x:-9,y:-2}],
+    others:[{k:'gold',m:2,x:-6,y:0},{k:'gold',m:1,x:-6,y:3.5},{k:'red',m:2,x:7,y:0.5}] },
+  { id:'pinball', name:'Pinball', T:20, budget:18, Fmax:12, tmax:2, stars:[2.5,6,9], isNew:[],
+    goal:'Pink <b>kicker bumpers</b> fling stones away faster than they arrived, and a teleporter links two corners.',
+    tip:'A kicker adds speed straight out from its surface. Use the kick to save force.',
+    bumpers:[0,1,2].map(k=>({x:4.5*Math.cos(Math.PI/2+k*2*Math.PI/3),y:4.5*Math.sin(Math.PI/2+k*2*Math.PI/3),r:0.55,kick:0.8})),
+    walls:[{x1:-6.5,y1:-5.5,x2:-4.5,y2:-6.8},{x1:6.5,y1:-5.5,x2:4.5,y2:-6.8}],
+    portals:[{a:{x:-6.8,y:3},b:{x:6.8,y:-1},r:0.7}], noPlace:[CIRC(6)],
+    greens:[{m:2,x:-7.5,y:-2},{m:2,x:7.5,y:2.5},{m:1,x:0,y:-7.8}],
+    others:[{k:'gold',m:2,x:-5,y:-1,vx:0.5},{k:'gold',m:1,x:2,y:-5},{k:'red',m:2,x:1,y:1},{k:'red',m:3,x:-1,y:5.5,vy:-0.3}] },
 ];
+/* play order for World 2: levels 9–12 use only forces (sandpaper and wind) */
+const W2_ORDER=['rough-patch','crosswind','headwind','downhill','gravity-well','slingshot','sticky','into-pit','twin-targets','orbit',
+  'bank-shot','glue-trap','pit-stop','portals','mud-donut','double-well','storm','pinball','minefield','gauntlet'];
+WORLD2.sort((a,b)=>W2_ORDER.indexOf(a.id)-W2_ORDER.indexOf(b.id));
+/* saved progress from before levels had ids was stored in this order */
+const OLD_ORDER=['first-push','clear-center','heavy-light','moving-targets','crossing-paths','rush-hour','heavyweight','grand-finale',
+  'gravity-well','slingshot','rough-patch','sticky','crosswind','into-pit','twin-targets','orbit','glue-trap','downhill','pit-stop',
+  'mud-donut','double-well','storm','minefield','gauntlet'];
 WORLD2.forEach(l=>l.world=1);
 LEVELS.forEach(l=>l.world=0);
 LEVELS.push(...WORLD2);
@@ -438,7 +477,7 @@ LEVELS.forEach(lv=>{
   if(!lv.field) lv.field=CIRC(ARENA.L);
   if(!lv.zones) lv.zones=[{...CIRC(ARENA.outer),m:1},{...CIRC(ARENA.inner),m:3}];
   if(!lv.noPlace) lv.noPlace=[CIRC(lv.placeMin||ARENA.inner)];
-  for(const k of ['wells','friction','wind','pits']) if(!lv[k]) lv[k]=[];
+  for(const k of ['wells','friction','wind','pits','bumpers','walls','portals']) if(!lv[k]) lv[k]=[];
   if(!lv.isNew) lv.isNew=[];
 });
 
@@ -515,12 +554,34 @@ function step(st,t,dt,lv){
     const k=(rr-d)/(ia+ib); a.x-=nx*k*ia; a.y-=ny*k*ia; b.x+=nx*k*ib; b.y+=ny*k*ib;
     if(stick) glue(a,b);
   }
+  if(lv&&(lv.bumpers.length||lv.walls.length)) for(const s of st){ if(s.stuck) continue;
+    for(const b of lv.bumpers) bounce(s,b.x,b.y,b.r,b.kick||0,t);
+    for(const w of lv.walls){ const ex=w.x2-w.x1, ey=w.y2-w.y1, u=Math.max(0,Math.min(1,((s.x-w.x1)*ex+(s.y-w.y1)*ey)/(ex*ex+ey*ey)));
+      bounce(s,w.x1+u*ex,w.y1+u*ey,WALL_R,0,t); } }
   if(grouped||st.some(s=>s.g)) settleGroups(st,true);
+  if(lv&&lv.portals.length) for(const s of st){ if(s.stuck) continue;
+    let at=null;
+    lv.portals.forEach((p,k)=>{ if(Math.hypot(s.x-p.a.x,s.y-p.a.y)<=p.r) at=[k,'a']; else if(Math.hypot(s.x-p.b.x,s.y-p.b.y)<=p.r) at=[k,'b']; });
+    if(!at){ s.inPortal=null; continue; }
+    if(s.inPortal) continue;                       // still inside the ring it came out of
+    const p=lv.portals[at[0]], from=p[at[1]], to=p[at[1]==='a'?'b':'a'], dx=to.x-from.x, dy=to.y-from.y;
+    for(const q of (s.g?s.g.m:[s])){ q.x+=dx; q.y+=dy; q.inPortal=at[0]+(at[1]==='a'?'b':'a'); q.tp=(q.tp||0)+1; }
+  }
   if(lv) for(const p of lv.pits) for(const s of st){
     if(s.stuck||Math.hypot(s.x-p.x,s.y-p.y)>p.r) continue;
     for(const q of (s.g?s.g.m:[s])){ q.stuck=true; q.vx=0; q.vy=0; q.pit=p; }
   }
 }
+/* stone s against a fixed round surface at (x,y) of radius R: elastic bounce, plus an outward kick */
+const WALL_R=0.15;
+function bounce(s,x,y,R,kick,t){
+  const dx=s.x-x, dy=s.y-y, d=Math.hypot(dx,dy), rr=R+s.r;
+  if(d>=rr||d===0) return;
+  const nx=dx/d, ny=dy/d, vn=s.vx*nx+s.vy*ny;
+  if(vn<0){ s.vx-=2*vn*nx; s.vy-=2*vn*ny; if(kick){ s.vx+=kick*nx; s.vy+=kick*ny; } s.hit=t; }
+  s.x=x+nx*rr; s.y=y+ny*rr;
+}
+function segDist(w,x,y){ const ex=w.x2-w.x1, ey=w.y2-w.y1, u=Math.max(0,Math.min(1,((x-w.x1)*ex+(y-w.y1)*ey)/(ex*ex+ey*ey))); return Math.hypot(x-w.x1-u*ex,y-w.y1-u*ey); }
 function scoreOf(st,lv){
   let total=0; const items=[];
   for(const s of st){ if(s.kind!=='gold'&&s.kind!=='red') continue;
@@ -540,6 +601,9 @@ function validSpot(lv,setup,i,x,y){
   for(const sh of lv.noPlace) if(overlaps(sh,x,y,r)) return false;
   for(const p of lv.pits) if(Math.hypot(p.x-x,p.y-y)<p.r+r) return false;
   for(const w of lv.wells) if(Math.hypot(w.x-x,w.y-y)<0.6+r) return false;
+  for(const b of lv.bumpers) if(Math.hypot(b.x-x,b.y-y)<b.r+r+0.05) return false;
+  for(const w of lv.walls) if(segDist(w,x,y)<WALL_R+r+0.05) return false;
+  for(const p of lv.portals) for(const e of [p.a,p.b]) if(Math.hypot(e.x-x,e.y-y)<p.r+r) return false;
   for(let j=0;j<setup.length;j++){ if(j===i) continue;
     if(Math.hypot(setup[j].x-x,setup[j].y-y)<r+radiusFor(lv.greens[j].m)+0.05) return false; }
   for(const o of lv.others){ if(Math.hypot(o.x-x,o.y-y)<r+radiusFor(o.m)+0.05) return false; }
@@ -552,7 +616,7 @@ function finalScore(lv,stonePts,used){
   return {stone:stonePts, unused, bonus, total:Math.round((stonePts+bonus)*10)/10};
 }
 function starsFor(lv,score){ return lv.stars.filter(s=>score>=s-1e-9).length; }
-if(typeof module!=='undefined') module.exports={ARENA,DT,LEVELS,WORLDS,radiusFor,zoneMult,maxMult,maxScore,defaultSetup,impulseUsed,makeStones,step,scoreOf,finalScore,simulate,validSpot,starsFor,inShape,overlaps,insideFully};
+if(typeof module!=='undefined') module.exports={ARENA,DT,LEVELS,WORLDS,OLD_ORDER,segDist,radiusFor,zoneMult,maxMult,maxScore,defaultSetup,impulseUsed,makeStones,step,scoreOf,finalScore,simulate,validSpot,starsFor,inShape,overlaps,insideFully};
 </script>
 
 <script>
@@ -574,12 +638,16 @@ function starStr(n,total=3){ let h=''; for(let i=0;i<total;i++) h+=i<n?'★':'<s
 /* ---------- progress (saved on this device) ---------- */
 const SAVE_KEY='momentum-stones-v1';
 function loadSave(){ let d=null; try{ d=JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); }catch(e){}
-  return { stars:LEVELS.map((_,i)=>d&&d.stars&&+d.stars[i]||0), best:LEVELS.map((_,i)=>d&&d.best&&d.best[i]!=null?d.best[i]:null) }; }
-function save(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify({stars:state.stars,best:state.best})); }catch(e){} }
+  let by={};
+  if(d&&d.byId) by=d.byId;
+  else if(d&&Array.isArray(d.stars)) OLD_ORDER.forEach((id,i)=>{ by[id]={s:+d.stars[i]||0,b:d.best&&d.best[i]!=null?d.best[i]:null}; });
+  return { stars:LEVELS.map(l=>by[l.id]&&+by[l.id].s||0), best:LEVELS.map(l=>by[l.id]&&by[l.id].b!=null?by[l.id].b:null) }; }
+function save(){ const byId={}; LEVELS.forEach((l,i)=>{ byId[l.id]={s:state.stars[i],b:state.best[i]}; });
+  try{ localStorage.setItem(SAVE_KEY,JSON.stringify({byId})); }catch(e){} }
 
 const state={li:0, phase:'setup', setup:null, sel:0, stones:null, t:0, acc:0, speed:1, trails:[],
   ghost:true, teacher:false, log:[], result:null, drag:null, ...loadSave()};
-function unlocked(i){ return state.teacher || i===0 || state.stars[i-1]>0; }
+function unlocked(i){ return state.teacher || i===0 || state.stars[i-1]>0 || state.stars[i]>0; }
 const LV=()=>LEVELS[state.li];
 
 /* ---------- overlay panel on the stage ---------- */
@@ -595,15 +663,18 @@ function hidePanel(){ panel.className='panel'; }
 /* ---------- level features (world 2 obstacles) ---------- */
 const FEATURES={
   wells:{em:'🌀',name:'Gravity well',txt:'pulls every stone toward it. Like real gravity, light and heavy stones get the same acceleration, and the pull is stronger up close.'},
-  friction:{em:'🟫',name:'Rough patch',txt:'friction slows any stone sliding on it until it stops. Every stone slows at the same rate (μg), whatever its mass.'},
+  friction:{em:'🟫',name:'Sandpaper',txt:'friction slows any stone sliding on it until it stops. Every stone slows at the same rate (μg), whatever its mass.'},
   wind:{em:'💨',name:'Wind zone',txt:'pushes every stone inside it with the same force, in the direction of the arrows. Light stones speed up more: a = F ÷ m.'},
   pits:{em:'🕳️',name:'Pit',txt:'a stone whose center slides over it falls in and never moves again. It still scores for the zone it\'s in.'},
   sticky:{em:'🟣',name:'Sticky stone',txt:'glues onto anything it touches. Glued stones move as one heavier stone (a perfectly inelastic collision).'},
+  bumpers:{em:'🔘',name:'Bumper',txt:'a fixed wall or post. A stone bounces off it at the same angle it came in, because the bumper pushes straight out from its surface. Pink kickers push extra hard and fling stones away faster than they arrived.'},
+  portals:{em:'🔁',name:'Teleporter',txt:'a stone whose center enters a ring pops out of the ring with the same color, still moving at the same speed in the same direction.'},
   zones:{em:'🎯',name:'Target shape',txt:'the scoring zones have a new shape. A stone scores the highest zone its center is in.'},
 };
 function levelFeatures(lv){
   const f=[]; if(lv.wells.length) f.push('wells'); if(lv.friction.length) f.push('friction'); if(lv.wind.length) f.push('wind');
-  if(lv.pits.length) f.push('pits'); if(lv.others.some(o=>o.st)) f.push('sticky'); if(lv.isNew.includes('zones')) f.push('zones');
+  if(lv.pits.length) f.push('pits'); if(lv.others.some(o=>o.st)) f.push('sticky');
+  if(lv.bumpers.length||lv.walls.length) f.push('bumpers'); if(lv.portals.length) f.push('portals'); if(lv.isNew.includes('zones')) f.push('zones');
   return f;
 }
 function featuresHTML(lv){
@@ -652,7 +723,7 @@ function toSetup(){
 }
 function run(){
   state.phase='run'; state.t=0; state.acc=0; state.stones=makeStones(LV(),state.setup);
-  state.trails=state.stones.map(s=>[[s.x,s.y]]); state.lastTrail=0;
+  state.trails=state.stones.map(s=>[[s.x,s.y,0]]); state.lastTrail=0;
   hidePanel(); renderCtrl();
 }
 function finish(){
@@ -836,9 +907,9 @@ function ghostPaths(){
   // each stone on its own (no collisions) with pushes, wind, wells, friction and pits
   const paths=[], dt=0.02, N=Math.round(lv.T/dt);
   for(const s0 of makeStones(lv,state.setup)){
-    const s={...s0}, one=[s], pts=[[s.x,s.y]], x0=s.x, y0=s.y;
-    for(let k=0;k<N;k++){ step(one,k*dt,dt,lv); if(k%3===2) pts.push([s.x,s.y]); if(s.stuck) break; }
-    pts.push([s.x,s.y]);
+    const s={...s0}, one=[s], pts=[[s.x,s.y,0]], x0=s.x, y0=s.y;
+    for(let k=0;k<N;k++){ const tp=s.tp||0; step(one,k*dt,dt,lv); if(k%3===2||(s.tp||0)!==tp) pts.push([s.x,s.y,s.tp||0]); if(s.stuck) break; }
+    pts.push([s.x,s.y,s.tp||0]);
     paths.push(Math.hypot(s.x-x0,s.y-y0)>0.05?{pts,end:[s.x,s.y],kind:s.kind,r:s.r,stuck:s.stuck}:null);
   }
   ghostCache={key,paths}; return paths;
@@ -891,6 +962,21 @@ function draw(){
   for(const p of lv.pits){ const X=sx(p.x), Y=sy(p.y), R=p.r*S;
     const gr=ctx.createRadialGradient(X,Y,R*0.2,X,Y,R); gr.addColorStop(0,'#000'); gr.addColorStop(0.75,'#05070f'); gr.addColorStop(1,'#2a3350');
     ctx.beginPath(); ctx.arc(X,Y,R,0,Math.PI*2); ctx.fillStyle=gr; ctx.fill(); ctx.strokeStyle='#4a5680'; ctx.lineWidth=1.5; ctx.stroke(); }
+  // walls and bumpers
+  for(const w of lv.walls){ ctx.lineCap='round'; ctx.strokeStyle='#2b3a66'; ctx.lineWidth=Math.max(5,2*WALL_R*S+3);
+    ctx.beginPath(); ctx.moveTo(sx(w.x1),sy(w.y1)); ctx.lineTo(sx(w.x2),sy(w.y2)); ctx.stroke();
+    ctx.strokeStyle='#9fb4ee'; ctx.lineWidth=Math.max(3,2*WALL_R*S); ctx.stroke(); }
+  for(const b of lv.bumpers){ const X=sx(b.x), Y=sy(b.y), R=b.r*S;
+    if(b.kick){ ctx.beginPath(); ctx.arc(X,Y,R+Math.max(3,S*0.12)*(1+0.25*Math.sin(now*5)),0,Math.PI*2); ctx.fillStyle='rgba(255,111,181,.25)'; ctx.fill(); }
+    const gr=ctx.createRadialGradient(X-R*.3,Y-R*.3,R*.1,X,Y,R); gr.addColorStop(0,'#fff'); gr.addColorStop(.3,b.kick?'#ff6fb5':'#b9c6ea'); gr.addColorStop(1,b.kick?'#7a1d52':'#3b4a78');
+    ctx.beginPath(); ctx.arc(X,Y,R,0,Math.PI*2); ctx.fillStyle=gr; ctx.fill(); ctx.strokeStyle=b.kick?'#ffb3d9':'#dfe7ff'; ctx.lineWidth=2; ctx.stroke(); }
+  // teleporters: matching colors in pairs
+  lv.portals.forEach((p,k)=>{ const col=['#36e0ff','#ff9f40','#b388ff'][k%3];
+    for(const e of [p.a,p.b]){ const X=sx(e.x), Y=sy(e.y), R=p.r*S;
+      const gr=ctx.createRadialGradient(X,Y,0,X,Y,R); gr.addColorStop(0,'rgba(5,8,20,.95)'); gr.addColorStop(0.7,'rgba(5,8,20,.6)'); gr.addColorStop(1,col+'55');
+      ctx.beginPath(); ctx.arc(X,Y,R,0,Math.PI*2); ctx.fillStyle=gr; ctx.fill();
+      ctx.strokeStyle=col; ctx.lineWidth=3; ctx.setLineDash([R*0.5,R*0.3]); ctx.lineDashOffset=-now*R; ctx.stroke(); ctx.setLineDash([]); ctx.lineDashOffset=0;
+      ctx.fillStyle=col; ctx.font=`900 ${Math.max(10,R*0.7)}px system-ui,sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('⇄',X,Y); } });
   // zone outlines stay visible on top of obstacles
   for(const z of zs){ shapePath(z); ctx.strokeStyle=(ZSTYLE[z.m]||ZSTYLE[1])[1]; ctx.lineWidth=2; ctx.stroke(); }
   ctx.restore();
@@ -907,14 +993,15 @@ function draw(){
   if(state.phase==='setup' && state.ghost){
     ghostPaths().forEach(g=>{ if(!g) return;
       ctx.strokeStyle=COL[g.kind]; ctx.globalAlpha=.55; ctx.lineWidth=1.6; ctx.setLineDash([5,6]);
-      ctx.beginPath(); g.pts.forEach(([x,y],k)=>k?ctx.lineTo(sx(x),sy(y)):ctx.moveTo(sx(x),sy(y))); ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); g.pts.forEach(([x,y,tp],k)=>k&&tp===g.pts[k-1][2]?ctx.lineTo(sx(x),sy(y)):ctx.moveTo(sx(x),sy(y))); ctx.stroke(); ctx.setLineDash([]);
       ctx.beginPath(); ctx.arc(sx(g.end[0]),sy(g.end[1]),g.r*S*(g.stuck?0.75:1),0,Math.PI*2); ctx.lineWidth=2; ctx.stroke();
       ctx.globalAlpha=1; });
   }
   // trails
   if(state.phase!=='setup'){
     state.trails.forEach((tr,k)=>{ const s=st[k]; ctx.strokeStyle=COL[s.kind]; ctx.globalAlpha=.35; ctx.lineWidth=2;
-      ctx.beginPath(); tr.forEach(([x,y],j)=>j?ctx.lineTo(sx(x),sy(y)):ctx.moveTo(sx(x),sy(y))); ctx.lineTo(sx(s.x),sy(s.y)); ctx.stroke(); ctx.globalAlpha=1; });
+      ctx.beginPath(); tr.forEach(([x,y,tp],j)=>j&&tp===tr[j-1][2]?ctx.lineTo(sx(x),sy(y)):ctx.moveTo(sx(x),sy(y)));
+      if((s.tp||0)===tr[tr.length-1][2]) ctx.lineTo(sx(s.x),sy(s.y)); ctx.stroke(); ctx.globalAlpha=1; });
   }
   // velocity arrows of moving stones (setup)
   if(state.phase==='setup'){
@@ -1022,7 +1109,7 @@ function frame(now){
     let k=Math.round(state.t/DT);
     while(state.acc>=DT && k<N){ step(state.stones,k*DT,DT,lv); k++; state.acc-=DT; }
     state.t=k*DT;
-    if(state.t-state.lastTrail>=0.1){ state.lastTrail=state.t; state.stones.forEach((s,j)=>state.trails[j].push([s.x,s.y])); }
+    if(state.t-state.lastTrail>=0.1){ state.lastTrail=state.t; state.stones.forEach((s,j)=>state.trails[j].push([s.x,s.y,s.tp||0])); }
     if(k>=N){ state.t=lv.T; finish(); }
   }
   draw();
