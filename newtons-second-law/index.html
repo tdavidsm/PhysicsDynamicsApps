@@ -534,12 +534,14 @@ function stepS1(dt){ const c=U.s1; if(!c.running) return; const a=s1Acc(c.p,c.m)
 const PEOPLE={
   ms:{h:1.50,shirt:'#36b5a8',pants:'#2d4f86',skin:'#f1c27d',hair:'#6b4421',limb:.075,torso:.23,arm:.06},
   hs:{h:1.74,shirt:'#7b61c9',pants:'#34528f',skin:'#c68642',hair:'#1c1410',limb:.085,torso:.27,arm:.075},
-  pl:{h:1.84,shirt:'#e6294b',pants:'#2a2f45',skin:'#8d5524',hair:'#120c08',limb:.12,torso:.33,arm:.12}};
+  pl:{h:1.84,shirt:'#e6294b',pants:'#2a2f45',skin:'#8d5524',hair:'#120c08',limb:.15,torso:.34,arm:.14,thigh:.21,bicep:.19}};
 function ik(x1,y1,x2,y2,L1,L2,bend){ const dx=x2-x1, dy=y2-y1, d=Math.max(1e-4,Math.min(Math.hypot(dx,dy),L1+L2-1e-4));
   const a=Math.atan2(dy,dx), c=(L1*L1+d*d-L2*L2)/(2*L1*d), ang=a-bend*Math.acos(clamp(c,-1,1));
   return {x:x1+L1*Math.cos(ang), y:y1+L1*Math.sin(ang)}; }
 function seg(g,pts,w,col){ g.strokeStyle=col; g.lineWidth=w; g.lineCap='round'; g.lineJoin='round'; g.beginPath(); g.moveTo(pts[0].x,pts[0].y); for(let i=1;i<pts.length;i++) g.lineTo(pts[i].x,pts[i].y); g.stroke(); }
 function shade(hex,f){ const n=parseInt(hex.slice(1),16); let r=n>>16,g2=(n>>8)&255,b=n&255; r=Math.round(r*f); g2=Math.round(g2*f); b=Math.round(b*f); return `rgb(${clamp(r,0,255)},${clamp(g2,0,255)},${clamp(b,0,255)})`; }
+function bulk(g,a,b,w,col){ if(!w) return; // a muscular upper limb: thick from the joint to most of the way to the knee/elbow
+  seg(g,[{x:a.x+(b.x-a.x)*0.12,y:a.y+(b.y-a.y)*0.12},{x:a.x+(b.x-a.x)*0.72,y:a.y+(b.y-a.y)*0.72}],w,col); }
 function drawPerson(g,type,hx,hy,phase,moving){
   const P=PEOPLE[type], H=P.h, shY=-0.81*H, hipY=-0.50*H;
   const armL=0.41*H, up=armL*0.52, lo=armL*0.52, dyA=hy-(shY+0.03);
@@ -551,10 +553,10 @@ function drawPerson(g,type,hx,hy,phase,moving){
   const hip={x:hipX,y:hipY};
   const tx=shX-hipX, ty=shY-hipY, tl=Math.hypot(tx,ty), nx=ty/tl, ny=-tx/tl; // back-side normal
   // back leg + back arm
-  const k2=ik(hip.x,hip.y,f2.x,f2.y,L1,L2,1); seg(g,[hip,k2,f2],P.limb,shade(P.pants,0.75));
+  const k2=ik(hip.x,hip.y,f2.x,f2.y,L1,L2,1); seg(g,[hip,k2,f2],P.limb,shade(P.pants,0.75)); bulk(g,hip,k2,P.thigh,shade(P.pants,0.75));
   g.fillStyle='#1a1d29'; rr(g,f2.x-0.05,f2.y-0.05,0.15,0.05,0.02); g.fill();
   const e2=ik(sh.x-0.02,sh.y,hx-0.02,hy+0.01,up,lo,-1);
-  seg(g,[{x:sh.x-0.02,y:sh.y},e2,{x:hx-0.02,y:hy+0.01}],P.arm,shade(type==='hs'?P.shirt:P.skin,0.75));
+  seg(g,[{x:sh.x-0.02,y:sh.y},e2,{x:hx-0.02,y:hy+0.01}],P.arm,shade(type==='hs'?P.shirt:P.skin,0.75)); bulk(g,{x:sh.x-0.02,y:sh.y},e2,P.bicep,shade(P.skin,0.75));
   // backpack / hood
   if(type==='ms'){ const cx=hipX+tx*0.62+nx*(P.torso/2+0.05), cy=hipY+ty*0.62+ny*(P.torso/2+0.05);
     g.save(); g.translate(cx,cy); g.rotate(Math.atan2(ty,tx)+Math.PI/2); g.fillStyle='#e0685a'; rr(g,-0.17,-0.08,0.34,0.16,0.05); g.fill(); g.fillStyle='#b84d42'; rr(g,-0.08,-0.10,0.16,0.04,0.02); g.fill(); g.restore(); }
@@ -563,7 +565,7 @@ function drawPerson(g,type,hx,hy,phase,moving){
   seg(g,[{x:hipX,y:hipY},{x:shX,y:shY}],P.torso,P.shirt);
   if(type==='pl'){ g.fillStyle=P.skin; g.beginPath(); g.arc(shX,shY+0.01,0.075,0,Math.PI*2); g.fill(); seg(g,[{x:hipX-0.04,y:hipY+0.02},{x:hipX+0.05,y:hipY-0.01}],0.07,'#2a2a2a'); }
   // front leg
-  const k1=ik(hip.x,hip.y,f1.x,f1.y,L1,L2,1); seg(g,[hip,k1,f1],P.limb,P.pants);
+  const k1=ik(hip.x,hip.y,f1.x,f1.y,L1,L2,1); seg(g,[hip,k1,f1],P.limb,P.pants); bulk(g,hip,k1,P.thigh,P.pants);
   g.fillStyle='#22263a'; rr(g,f1.x-0.05,f1.y-0.05,0.15,0.05,0.02); g.fill();
   // head
   const hX=shX+0.06, hY=shY-0.16, hr=0.105;
@@ -580,7 +582,7 @@ function drawPerson(g,type,hx,hy,phase,moving){
   // front arm
   const e1=ik(sh.x,sh.y,hx,hy,up,lo,-1);
   if(type==='hs') seg(g,[sh,e1,{x:hx,y:hy}],P.arm,P.shirt);
-  else { seg(g,[sh,e1,{x:hx,y:hy}],P.arm,P.skin); if(type==='ms') seg(g,[sh,{x:sh.x+(e1.x-sh.x)*0.45,y:sh.y+(e1.y-sh.y)*0.45}],P.arm+0.03,P.shirt); }
+  else { seg(g,[sh,e1,{x:hx,y:hy}],P.arm,P.skin); bulk(g,sh,e1,P.bicep,P.skin); if(type==='ms') seg(g,[sh,{x:sh.x+(e1.x-sh.x)*0.45,y:sh.y+(e1.y-sh.y)*0.45}],P.arm+0.03,P.shirt); }
   g.fillStyle=P.skin; g.beginPath(); g.arc(hx,hy,0.045,0,Math.PI*2); g.fill();
 }
 function drawCartBack(g,x){ // x = rear of basket; basket 0.95 long, top at -1.0, bottom -0.42
