@@ -1,0 +1,1195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Newton's 2nd Law Lab</title>
+<style>
+  :root{
+    --bg:#0f1830; --panel:#16213e; --panel2:#1d2b52; --ink:#eaf0ff;
+    --muted:#9fb0d6; --line:#2c3d6b; --accent:#ffd166; --good:#2fbf57; --bad:#e6294b;
+    /* physics variable colors, used everywhere the variable appears */
+    --cF:#7cc4ff; --cm:#4cd98a; --ca:#ff6b6b; --ct:#c792ff; --cx:#ffc46b; --cv:#ff9f43;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  html,body{margin:0;min-height:100%}
+  body{background:radial-gradient(1200px 700px at 70% -10%, #1a2a52 0%, var(--bg) 55%);background-color:var(--bg);
+    color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+  header{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#1a2748,#131f3c);flex-wrap:wrap}
+  header h1{font-size:19px;margin:0;white-space:nowrap}
+  header .tag{font-size:12px;color:var(--muted)}
+  .spacer{flex:1}
+  .medals{display:flex;gap:6px}
+  .medal{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);background:var(--panel);display:grid;place-items:center;
+    font-size:13px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
+  .medal.won{background:#173d28;border-color:var(--good);color:#8ff0b6}
+  .hbtn{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 12px;min-height:40px;
+    font:inherit;font-size:13px;cursor:pointer;touch-action:manipulation}
+  .hbtn:hover{border-color:var(--accent)}
+
+  .wrap{max-width:1260px;margin:0 auto;padding:10px 12px 30px}
+  .tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px}
+  .tab{position:relative;text-align:left;background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:6px 10px;
+    min-height:44px;cursor:pointer;color:var(--ink);font:inherit;touch-action:manipulation}
+  .tab .n{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px}
+  .tab .t{font-weight:800;font-size:14.5px;margin-top:1px}
+  .tab .d{font-size:11.5px;color:var(--muted);font-style:italic;line-height:1.25;margin-top:1px}
+  .tab.sel{border-color:var(--accent);background:#20315c}
+  .tab.locked{opacity:.5}
+  .tab .badge{position:absolute;top:5px;right:8px;font-size:14px}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px;min-width:0}
+  .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:0 0 8px}
+  .small{font-size:13px;color:var(--muted);line-height:1.45;margin:0 0 8px}
+  .small b{color:var(--ink)}
+  .btn{appearance:none;border:0;background:var(--accent);color:#0f1830;font:inherit;font-weight:800;font-size:15px;border-radius:12px;
+    padding:11px 16px;min-height:44px;cursor:pointer;touch-action:manipulation}
+  .btn.secondary{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+  .btn.go{background:#ff8a3d;color:#0f1830}
+  .btn.small{padding:8px 12px;font-size:14px}
+  .btn:disabled{opacity:.45;cursor:default}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  canvas{display:block;width:100%;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;border-radius:10px;background:#0a1024}
+  .stagewrap{position:relative}
+  .panel{position:absolute;left:10px;bottom:10px;width:min(380px,calc(100% - 20px));max-height:calc(100% - 20px);overflow:auto;
+    background:rgba(10,17,36,.95);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.45;
+    box-shadow:0 10px 30px #0009;display:none}
+  .panel.show{display:block}
+  #s2panel,#s4panel{width:min(330px,58%);font-size:13.5px}
+  #s2panel .worked{margin:4px 0 6px}
+  #s2panel .worked,#s4panel .worked{font-size:13.5px}
+  .banner{font-weight:800;font-size:15px;margin-bottom:4px}
+  .banner.good{color:#8ff0b6} .banner.bad{color:#ff8b9b} .banner.info{color:var(--accent)}
+  .worked{background:#0c1428;border-radius:10px;padding:8px 10px;margin:8px 0;line-height:1.55;font-size:14px}
+  .worked b{color:var(--accent)}
+  .vF{color:var(--cF);font-weight:800} .vm{color:var(--cm);font-weight:800} .va{color:var(--ca);font-weight:800}
+  .vt{color:var(--ct);font-weight:800} .vx{color:var(--cx);font-weight:800} .vv{color:var(--cv);font-weight:800}
+  .num{font-variant-numeric:tabular-nums}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#0c1428;border:1px solid var(--accent);color:var(--ink);
+    border-radius:12px;padding:10px 16px;font-size:14px;z-index:80;display:none;max-width:calc(100% - 30px);text-align:center}
+  .toast.show{display:block}
+
+  /* ---------- Stage 1 ---------- */
+  .s1{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);grid-template-areas:"scene scene" "graph grid";gap:10px}
+  .s1 .sceneC{grid-area:scene;padding:6px} .s1 .graphC{grid-area:graph} .s1 .gridC{grid-area:grid}
+  #cv1{height:clamp(190px,29vh,250px)}
+  #cvg1{height:clamp(240px,40vh,330px)}
+  .selhead{font-size:15px;margin-bottom:8px}
+  .seg{display:flex;gap:6px;flex:1;min-width:250px}
+  .segb{flex:1;min-height:44px;border-radius:10px;border:2px solid var(--line);background:var(--panel2);color:var(--ink);font:inherit;font-weight:800;
+    font-size:14px;cursor:pointer;touch-action:manipulation}
+  .segb.on.cS{background:#173057;border-color:#5aa9ff;color:#a9d3ff}
+  .segb.on.cM{background:#163f30;border-color:#3ccf8e;color:#9ff0c9}
+  .segb.on.cF{background:#4a1f22;border-color:#ff7a59;color:#ffc0ad}
+  table.grid9{width:100%;border-collapse:separate;border-spacing:5px;margin-top:6px}
+  table.grid9 th{font-size:12.5px;color:var(--muted);font-weight:700;text-align:center;padding:2px}
+  table.grid9 th.rh{text-align:left;width:26%}
+  table.grid9 th .em{font-size:20px;display:block}
+  .cell{width:100%;min-height:46px;border-radius:10px;border:2px solid var(--line);background:#0c1428;color:var(--ink);font:inherit;font-weight:800;
+    font-size:14px;cursor:pointer;touch-action:manipulation;position:relative}
+  .cell.sel{border-color:var(--accent);background:#20315c}
+  .cell.right{box-shadow:inset 0 0 0 2px var(--good)}
+  .cell.wrong{box-shadow:inset 0 0 0 2px var(--bad)}
+  .cell .mk{position:absolute;top:2px;right:4px;font-size:11px}
+  .cell .tS{color:#a9d3ff} .cell .tM{color:#9ff0c9} .cell .tF{color:#ffc0ad} .cell .tq{color:#56658f}
+  .msg{font-size:14px;line-height:1.45;margin:8px 0}
+  .msg.good{color:#8ff0b6} .msg.bad{color:#ff8b9b}
+  .found{background:#0c1428;border:1px solid #2a5a3c;border-radius:12px;padding:8px 12px;margin-top:8px;font-size:14px;line-height:1.5}
+  .found h3{margin:0 0 4px;font-size:14px;color:#8ff0b6}
+  .found ul{margin:4px 0 8px;padding-left:20px}
+
+  /* ---------- Stage 2 ---------- */
+  .subtabs{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .stab{background:var(--panel2);border:2px solid var(--line);border-radius:10px;padding:7px 14px;min-height:44px;cursor:pointer;color:var(--ink);
+    font:inherit;font-weight:800;font-size:14px;touch-action:manipulation}
+  .stab.sel{border-color:var(--accent);background:#20315c}
+  .stab.locked{opacity:.5}
+  .stab .sm{font-weight:600;color:var(--muted);font-size:12px;margin-left:6px}
+  .cols{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:10px;align-items:start}
+  .col{display:flex;flex-direction:column;gap:10px;min-width:0}
+  #cv2{height:clamp(260px,40vh,340px)}
+  #cvg2{height:clamp(190px,28vh,240px)}
+  .ctlrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 8px}
+  .ctlrow .lbl{font-weight:700;font-size:14px}
+  .stepper{display:flex;align-items:center;gap:6px}
+  .stepper .sb{width:46px;height:46px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:24px;font-weight:800;
+    cursor:pointer;touch-action:manipulation;line-height:1}
+  .stepper .sb:active{background:#2a3d70}
+  .stepper .sv{min-width:56px;text-align:center;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;background:#0c1428;border:1px solid var(--line);
+    border-radius:10px;padding:8px 6px}
+  .readouts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:8px}
+  .ro{background:#0c1428;border-radius:10px;padding:6px 8px;min-width:0}
+  .ro .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .ro .v{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .pips{display:flex;gap:5px;align-items:center;font-size:13px;color:var(--muted);flex-wrap:wrap}
+  .pip{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);background:#0c1428;display:grid;place-items:center;font-size:10px;font-weight:900}
+  .pip.on{background:var(--good);border-color:var(--good);color:#0f1830}
+  .pip.miss{background:var(--bad);border-color:var(--bad);color:#fff}
+  .log{max-height:250px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:#0c1428}
+  .log table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+  .log th{position:sticky;top:0;background:#1a2748;color:var(--muted);font-weight:700;font-size:11.5px;text-align:right;padding:6px 7px;border-bottom:1px solid var(--line);z-index:1}
+  .log td{text-align:right;padding:5px 7px;border-bottom:1px solid #1b2850;white-space:nowrap}
+  .log th:first-child,.log td:first-child{text-align:left;color:var(--muted)}
+  .log tr.new td{background:#2a2a18}
+  .log .empty{padding:14px;color:var(--muted);text-align:center;font-size:13px}
+  .lognote{font-size:12px;color:var(--muted);margin-top:5px}
+  .qlist{display:flex;flex-direction:column;gap:10px}
+  .q{background:#0c1428;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .q.done{border-color:#2a5a3c}
+  .q .qt{font-weight:700;font-size:15px;margin-bottom:8px;line-height:1.4}
+  .opts{display:flex;flex-direction:column;gap:6px}
+  .opt{text-align:left;min-height:44px;border-radius:10px;border:2px solid var(--line);background:var(--panel2);color:var(--ink);font:inherit;font-size:14px;
+    padding:8px 12px;cursor:pointer;touch-action:manipulation;line-height:1.35}
+  .opt.right{border-color:var(--good);background:#163f2a}
+  .opt.wrong{border-color:var(--bad);background:#3d1a22}
+  .opt:disabled{cursor:default}
+  .fb{font-size:13.5px;margin-top:6px;line-height:1.45}
+  .fb.good{color:#8ff0b6} .fb.bad{color:#ff8b9b}
+
+  /* ---------- Stage 3 ---------- */
+  #cv3{height:clamp(300px,56vh,470px)}
+  .views{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+  .vbtn{background:var(--panel2);border:2px solid var(--line);border-radius:10px;padding:6px 10px;min-height:40px;color:var(--ink);font:inherit;font-size:13px;font-weight:700;
+    cursor:pointer;touch-action:manipulation}
+  .vbtn.sel{border-color:var(--accent);background:#20315c}
+  .vbtn:disabled{opacity:.4;cursor:default}
+  .steppips{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+  .sp{flex:1;min-width:18px;height:8px;border-radius:4px;background:#0c1428;border:1px solid var(--line)}
+  .sp.on{background:var(--good);border-color:var(--good)} .sp.cur{background:var(--accent);border-color:var(--accent)}
+  .part{font-size:11.5px;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;font-weight:800;margin-bottom:4px}
+  .prompt{font-size:15px;line-height:1.5;margin-bottom:10px}
+  .prompt b{color:var(--accent)}
+  .numrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .field{background:#0c1428;border:2px solid var(--line);border-radius:10px;color:var(--ink);font:inherit;font-size:18px;padding:9px 10px;width:140px;min-height:44px;
+    font-variant-numeric:tabular-nums}
+  .field:focus{outline:none;border-color:var(--accent)}
+  .explain{background:#0c1428;border:1px solid #2a5a3c;border-radius:12px;padding:8px 12px;margin-top:10px;font-size:14px;line-height:1.5}
+  .explain b{color:var(--accent)}
+  .eqbig{font-size:26px;font-weight:900;text-align:center;margin:8px 0;letter-spacing:.5px}
+
+  /* ---------- Stage 4 ---------- */
+  #cv4{height:clamp(300px,58vh,470px)}
+  .setups{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 10px}
+  .setup{background:#0c1428;border-radius:12px;padding:8px 10px;border:2px solid var(--line)}
+  .setup .nm{font-weight:900;font-size:16px;margin-bottom:4px}
+  .setup .ln{font-size:14px;font-variant-numeric:tabular-nums;line-height:1.5}
+  .setup.A{border-color:#2f6fb0} .setup.A .nm{color:#7cc4ff}
+  .setup.B{border-color:#b0602f} .setup.B .nm{color:#ffb27a}
+  .picks{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:6px 0 10px}
+  .pickb{min-height:50px;border-radius:12px;border:2px solid var(--line);background:var(--panel2);color:var(--ink);font:inherit;font-weight:800;font-size:15px;
+    cursor:pointer;touch-action:manipulation}
+  .pickb.on{border-color:var(--accent);background:#3a3420;color:var(--accent)}
+  .pickb:disabled{opacity:.5;cursor:default}
+  .credit{background:#163f2a;border:1px solid var(--good);border-radius:12px;padding:8px 12px;font-size:14px;margin-bottom:10px}
+  .credit a{color:var(--accent);font-weight:800;cursor:pointer;text-decoration:underline}
+
+  /* ---------- Modals ---------- */
+  .modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;z-index:60;padding:14px}
+  .modal.open{display:flex}
+  .modalbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;width:100%;max-width:720px;max-height:calc(100vh - 28px);overflow:auto;padding:16px 18px;
+    box-shadow:0 20px 50px #000a}
+  .modalbox.narrow{max-width:440px}
+  .hero{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+  .hero .big{font-size:44px}
+  .hero h2{margin:0;font-size:22px}
+  .hero p{margin:3px 0 0;color:var(--muted);font-size:14px}
+  .minis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}
+  .mini{background:#0c1428;border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-size:13px;line-height:1.45}
+  .mini .mt{font-weight:800;font-size:14px;margin-bottom:3px}
+  .mini .clr{color:#8ff0b6}
+  .modalbox ul{margin:6px 0 12px;padding-left:20px;font-size:14px;line-height:1.5}
+  .modalbox h3{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:10px 0 4px}
+  .codebox{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:34px;letter-spacing:5px;border:2px dashed var(--accent);border-radius:12px;padding:12px;
+    text-align:center;color:var(--accent);margin:12px 0;background:#0c1428;font-weight:800}
+  .err{color:#ff8b9b;font-size:13px;min-height:18px;margin-top:4px}
+  .namefield{width:100%;font-size:18px}
+
+  @media (max-width:980px){
+    .s1{grid-template-columns:minmax(0,1fr);grid-template-areas:"scene" "graph" "grid"}
+    .cols{grid-template-columns:minmax(0,1fr)}
+    .readouts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+  @media (max-width:640px){
+    header h1{font-size:17px} header .tag{display:none}
+    .tabs{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .tab .d{display:none}
+    .minis{grid-template-columns:minmax(0,1fr)}
+    #cv1{height:clamp(170px,48vw,240px)}
+    #cvg1{height:clamp(220px,70vw,320px)}
+    #cv2,#cv4{height:clamp(280px,92vw,420px)}
+    #cv3{height:clamp(260px,80vw,420px)}
+    .seg{min-width:0;width:100%}
+    .codebox{font-size:26px;letter-spacing:3px}
+    .setups{grid-template-columns:1fr}
+    #s2panel,#s4panel{width:calc(100% - 20px)}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>🛒 Newton's 2nd Law Lab</h1>
+  <span class="tag">How force and mass set acceleration</span>
+  <div class="spacer"></div>
+  <div class="medals" id="medals"></div>
+  <button class="hbtn" id="helpBtn">📖 How to play</button>
+  <button class="hbtn" id="keyBtn" aria-label="Teacher unlock">🔑</button>
+</header>
+
+<div class="wrap">
+  <div class="tabs" id="tabs"></div>
+
+  <!-- ===================== STAGE 1 ===================== -->
+  <section id="st1" class="stage s1">
+    <div class="card sceneC"><canvas id="cv1"></canvas></div>
+    <div class="card graphC"><h2>Velocity vs. time · <span style="color:#ffd166">gold = this push</span> · gray = earlier pushes</h2><canvas id="cvg1"></canvas></div>
+    <div class="card gridC">
+      <h2>Pick the acceleration for each pair</h2>
+      <div id="s1sel"></div>
+      <table class="grid9" id="s1grid"></table>
+      <div class="msg" id="s1msg"></div>
+      <div class="row"><button class="btn" id="s1check">✔ Check my grid</button></div>
+      <div id="s1found"></div>
+    </div>
+  </section>
+
+  <!-- ===================== STAGE 2 ===================== -->
+  <section id="st2" class="stage" hidden>
+    <div class="subtabs" id="s2tabs"></div>
+    <div class="cols" id="s2lab">
+      <div class="col">
+        <div class="card stagewrap" style="padding:6px"><canvas id="cv2"></canvas><div class="panel" id="s2panel"></div></div>
+        <div class="card" id="s2ctrl"></div>
+      </div>
+      <div class="col">
+        <div class="card"><h2 id="s2gtitle">Live graphs</h2><canvas id="cvg2"></canvas></div>
+        <div class="card"><h2 id="s2ltitle">Data table</h2><div class="log" id="s2log"></div><div class="lognote" id="s2lognote"></div></div>
+      </div>
+    </div>
+    <div class="card" id="s2q" hidden></div>
+  </section>
+
+  <!-- ===================== STAGE 3 ===================== -->
+  <section id="st3" class="stage" hidden>
+    <div class="cols">
+      <div class="col">
+        <div class="card"><h2 id="s3gtitle">Your graph</h2><div class="views" id="s3views"></div><canvas id="cv3"></canvas></div>
+      </div>
+      <div class="col">
+        <div class="card" id="s3step"></div>
+        <div class="card"><h2 id="s3ttitle">Your data</h2><div class="log" id="s3log"></div><div class="lognote" id="s3note"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== STAGE 4 ===================== -->
+  <section id="st4" class="stage" hidden>
+    <div class="cols">
+      <div class="col">
+        <div class="card stagewrap" style="padding:6px"><canvas id="cv4"></canvas><div class="panel" id="s4panel"></div></div>
+      </div>
+      <div class="col">
+        <div class="card" id="s4card"></div>
+        <div class="card"><h2>Race log</h2><div class="log" id="s4log"></div><div class="lognote" id="s4note"></div></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Intro modal -->
+<div class="modal" id="introModal"><div class="modalbox">
+  <div class="hero"><div class="big">🛒</div><div><h2>Newton's 2nd Law Lab</h2>
+    <p>Find out how the force on an object and its mass work together to set its acceleration.</p></div></div>
+  <h3>The stages</h3>
+  <div class="minis">
+    <div class="mini"><div class="mt">1 · 🛒 Push the Cart</div>Three pushers and three baby animals in shopping carts. Watch each push and its velocity–time graph, then rate the acceleration <b>Slow</b>, <b>Medium</b> or <b>Fast</b>.<div class="clr">Clears: all 9 cells right.</div></div>
+    <div class="mini"><div class="mt">2 · 🧪 Cart &amp; Pulley</div><b>Task A:</b> move masses from the cart to the hanger (same total mass, more force). <b>Task B:</b> add blocks to the cart (same force, more mass).<div class="clr">Clears: 5 trials in each task, then the check questions.</div></div>
+    <div class="mini"><div class="mt">3 · 📈 Find the Law</div>Step through graphs of your own data and work out the equation that links <span class="va">a</span>, <span class="vF">F</span> and <span class="vm">m</span>.<div class="clr">Clears: every step answered.</div></div>
+    <div class="mini"><div class="mt">4 · 🏁 Race Day</div>Two carts, different masses. Predict which reaches the end first, or if it's a tie.<div class="clr">Clears: 5 right before 3 wrong. Then you get your completion code.</div></div>
+  </div>
+  <h3>How it works</h3>
+  <ul>
+    <li>Finish a stage to unlock the next one. Your progress is saved on this device.</li>
+    <li>The lab track has no friction, and <b>g = 9.8 m/s²</b>. The weight of the hanging mass is the force that pulls the cart.</li>
+    <li>The app measures the slope of each velocity–time graph and puts the acceleration in your data table.</li>
+  </ul>
+  <button class="btn" id="introGo" style="width:100%">Start the lab</button>
+</div></div>
+
+<!-- Teacher modal -->
+<div class="modal" id="keyModal"><div class="modalbox narrow">
+  <h2 style="margin:0 0 8px">🔑 Teacher unlock</h2>
+  <p class="small">Unlocks every stage on this device until the page reloads. It doesn't give a completion code.</p>
+  <input class="field namefield" id="keyField" type="password" inputmode="numeric" autocomplete="off" placeholder="Passcode">
+  <div class="err" id="keyErr"></div>
+  <div class="row" style="margin-top:8px"><button class="btn" id="keyGo">Unlock</button><button class="btn secondary" id="keyCancel">Cancel</button></div>
+</div></div>
+
+<!-- Name modal -->
+<div class="modal" id="nameModal"><div class="modalbox narrow">
+  <h2 style="margin:0 0 8px">🎉 Enter your name to get your completion code.</h2>
+  <input class="field namefield" id="nameField" type="text" autocomplete="name" placeholder="First and last name">
+  <div class="err" id="nameErr"></div>
+  <div class="row" style="margin-top:8px"><button class="btn" id="nameGo">Get my code</button><button class="btn secondary" id="nameCancel">Cancel</button></div>
+</div></div>
+
+<!-- Win modal -->
+<div class="modal" id="winModal"><div class="modalbox narrow">
+  <h2 style="margin:0" id="winTitle">Congratulations!</h2>
+  <p class="small" style="margin-top:6px">You finished all four stages of the Newton's 2nd Law Lab.</p>
+  <div class="codebox" id="winCode">--------</div>
+  <div class="row">
+    <button class="btn" id="turnInBtn">📨 Turn it in</button>
+    <button class="btn secondary" id="copyBtn">Copy code</button>
+    <button class="btn secondary" id="winClose">Keep practicing</button>
+  </div>
+  <p class="small" id="winNote" style="margin-top:10px"></p>
+</div></div>
+
+<script>
+/* =====================================================================
+   SETTINGS
+   ===================================================================== */
+/* Paste the form's PRE-FILLED link here, made by typing these placeholders into the matching questions:
+   NAME, CODE, MISSES (optional: races missed in the winning series). Leave blank to hide the Turn it in button. */
+const FORM_PREFILL_LINK='';
+const TEACHER_CODE='1253';
+const KEY='newtons-second-law-lab-v1';
+const G=9.8;
+const D=0.5;                 // m the cart rolls before it hits the stop
+const DISC=50, HANGER=50, NDISC=6;      // Task A: six 50 g slotted masses, 50 g hanger
+const BLOCK=200, NBLOCK=6, B_HANG=100;  // Task B: up to six 200 g blocks, hanger fixed at 100 g
+const TRIALS_NEEDED=5;
+const RACE_WINS=5, RACE_MAX_MISS=2;     // 5 right before 3 wrong
+
+/* =====================================================================
+   HELPERS
+   ===================================================================== */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const FONT='-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif';
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const f2=v=>(Math.round(v*100)/100).toFixed(2);
+const neg=s=>String(s).replace(/^-/,'−');
+const fmt=(v,d=2)=>neg((Math.round(v*10**d)/10**d).toFixed(d));
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function parseNum(s){ s=String(s||'').replace(/[−–—]/g,'-').replace(/,/g,'.').trim(); const m=s.match(/-?\d*\.?\d+(e-?\d+)?/i); return m?parseFloat(m[0]):NaN; }
+function near(x,ans,rel=0.03,abs=0.011){ return isFinite(x) && Math.abs(x-ans)<=Math.max(Math.abs(ans)*rel,abs); }
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),2600); }
+
+function rr(g,x,y,w,h,r){ r=Math.max(0,Math.min(r,Math.abs(w)/2,Math.abs(h)/2)); g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
+function label(g,txt,x,y,o={}){
+  const size=o.size||12, pad=o.pad??4; g.font=`${o.weight||700} ${size}px ${FONT}`;
+  const w=g.measureText(txt).width, h=size+pad*2-2;
+  const lx=o.align==='left'?x:o.align==='right'?x-w:x-w/2;
+  if(o.bg!==false){ g.fillStyle=o.bg||'rgba(10,16,36,.85)'; rr(g,lx-pad,y-h/2,w+pad*2,h,5); g.fill(); }
+  g.fillStyle=o.color||'#eaf0ff'; g.textBaseline='middle'; g.textAlign='left'; g.fillText(txt,lx,y+0.5);
+}
+function arrow(g,x1,y1,x2,y2,color,w=3,hl=11){
+  const a=Math.atan2(y2-y1,x2-x1), L=Math.hypot(x2-x1,y2-y1); if(L<1) return; const h=Math.min(hl,L*0.7);
+  g.strokeStyle=color; g.fillStyle=color; g.lineWidth=w; g.lineCap='round';
+  g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2-Math.cos(a)*h*0.7,y2-Math.sin(a)*h*0.7); g.stroke();
+  g.beginPath(); g.moveTo(x2,y2); g.lineTo(x2-Math.cos(a-0.45)*h,y2-Math.sin(a-0.45)*h); g.lineTo(x2-Math.cos(a+0.45)*h,y2-Math.sin(a+0.45)*h); g.closePath(); g.fill();
+}
+function Canvas(sel){
+  const cv=$(sel), g=cv.getContext('2d');
+  const o={cv,g,W:0,H:0,fit(){ const dpr=Math.min(2.5,window.devicePixelRatio||1); o.W=cv.clientWidth; o.H=cv.clientHeight; if(!o.W||!o.H) return false;
+    const bw=Math.round(o.W*dpr), bh=Math.round(o.H*dpr); if(cv.width!==bw||cv.height!==bh){cv.width=bw;cv.height=bh;} g.setTransform(dpr,0,0,dpr,0,0); return true; }};
+  return o;
+}
+function niceStep(max,n=5){ const raw=max/n, p=10**Math.floor(Math.log10(raw)); for(const m of [1,2,2.5,5,10]) if(m*p>=raw) return m*p; return 10*p; }
+function niceMax(max,n=5){ const s=niceStep(max,n); return {max:Math.ceil(max/s-1e-9)*s, step:s}; }
+function decs(step){ return step>=1?0:step>=0.1?1:2; }
+/* Plot frame: box in px, returns mappers */
+function plotFrame(g,box,o){
+  const X=v=>box.x+v/o.xMax*box.w, Y=v=>box.y+box.h-v/o.yMax*box.h;
+  g.fillStyle='#0c1428'; g.fillRect(box.x,box.y,box.w,box.h);
+  g.lineWidth=1; g.font=`600 11px ${FONT}`; g.textBaseline='middle';
+  if(o.xStep){ for(let v=0; v<=o.xMax+1e-9; v+=o.xStep){ const x=X(v); g.strokeStyle=v===0?'#3a4d7d':'#1c2a52'; g.beginPath(); g.moveTo(x,box.y); g.lineTo(x,box.y+box.h); g.stroke();
+    if(o.ticks!==false){ g.fillStyle='#9fb0d6'; g.textAlign='center'; g.fillText(neg(v.toFixed(decs(o.xStep))),x,box.y+box.h+10); } } }
+  if(o.yStep){ for(let v=0; v<=o.yMax+1e-9; v+=o.yStep){ const y=Y(v); g.strokeStyle=v===0?'#3a4d7d':'#1c2a52'; g.beginPath(); g.moveTo(box.x,y); g.lineTo(box.x+box.w,y); g.stroke();
+    if(o.ticks!==false){ g.fillStyle='#9fb0d6'; g.textAlign='right'; g.fillText(neg(v.toFixed(decs(o.yStep))),box.x-4,y); } } }
+  g.strokeStyle='#5b6f9f'; g.lineWidth=1.5; g.beginPath(); g.moveTo(box.x,box.y); g.lineTo(box.x,box.y+box.h); g.lineTo(box.x+box.w,box.y+box.h); g.stroke();
+  g.font=`700 12px ${FONT}`;
+  if(o.xLabel){ g.fillStyle=o.xColor||'#eaf0ff'; g.textAlign='center'; g.fillText(o.xLabel,box.x+box.w/2,box.y+box.h+(o.ticks===false?12:25)); }
+  if(o.yLabel){ g.save(); g.translate(box.x-(o.ticks===false?12:o.yLabW||30),box.y+box.h/2); g.rotate(-Math.PI/2); g.fillStyle=o.yColor||'#eaf0ff'; g.textAlign='center'; g.fillText(o.yLabel,0,0); g.restore(); }
+  return {X,Y};
+}
+function bindStepper(el,get,set,min,max,onChange){
+  const val=el.querySelector('.sv'); const upd=()=>{ val.textContent=get(); }; upd();
+  el.querySelectorAll('.sb').forEach(b=>{ let to=null, iv=null; const d=+b.dataset.d;
+    const doit=()=>{ const v=clamp(get()+d,min,max); if(v!==get()){ set(v); upd(); onChange&&onChange(); } };
+    const stop=()=>{ clearTimeout(to); clearInterval(iv); to=iv=null; };
+    b.addEventListener('pointerdown',e=>{ e.preventDefault(); doit(); stop(); to=setTimeout(()=>{ iv=setInterval(doit,150); },420); });
+    ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,stop));
+    b.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); doit(); } });
+  });
+  return upd;
+}
+
+/* =====================================================================
+   STATE
+   ===================================================================== */
+function freshState(){ return {v:1, cart:pick([400,450,500,550,600]), seenIntro:false, stage:1,
+  s1:{ans:{}, marks:{}, pushed:{}, cleared:false},
+  s2:{A:[], B:[], task:'A', q:{}, cleared:false},
+  s3:{step:0, solved:false, cleared:false, prob:null},
+  s4:{right:0, wrong:0, log:[], race:null, pick:null, cleared:false, series:1},
+  earned:false, name:'', code:'', winMisses:0}; }
+function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const o=JSON.parse(raw); if(o&&o.v===1){ const f=freshState();
+  for(const k of Object.keys(f)) if(o[k]===undefined) o[k]=f[k];
+  for(const k of ['s1','s2','s3','s4']) for(const kk of Object.keys(f[k])) if(o[k][kk]===undefined) o[k][kk]=f[k][kk];
+  return o; } } }catch(e){} return freshState(); }
+let S=load();
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
+const U={stage:S.stage||1, teacher:false, speed:0.5,
+  s1:{p:0,m:0,t:0,running:false,done:false},
+  s2:{nA:0, kB:0, run:null},
+  s3:{view:'aF', fb:null},
+  s4:{run:null}};
+
+const STAGES=[
+  {n:'Stage 1',t:'🛒 Push the Cart',d:'Bigger push, or bigger load?'},
+  {n:'Stage 2',t:'🧪 Cart & Pulley',d:'Change F, then m, and measure a'},
+  {n:'Stage 3',t:'📈 Find the Law',d:'Turn your graphs into an equation'},
+  {n:'Stage 4',t:'🏁 Race Day',d:'5 right before 3 wrong'}];
+const cleared=n=>[S.s1.cleared,S.s2.cleared,S.s3.cleared,S.s4.cleared][n-1];
+const unlocked=n=>n===1||U.teacher||cleared(n-1);
+
+function renderTabs(){
+  $('#tabs').innerHTML=STAGES.map((st,i)=>{ const n=i+1, lock=!unlocked(n);
+    return `<button class="tab ${U.stage===n?'sel':''} ${lock?'locked':''}" data-n="${n}"><div class="n">${st.n}</div><div class="t">${st.t}</div><div class="d">${st.d}</div>${cleared(n)?'<span class="badge">✅</span>':lock?'<span class="badge">🔒</span>':''}</button>`; }).join('');
+  $('#medals').innerHTML=STAGES.map((st,i)=>`<div class="medal ${cleared(i+1)?'won':''}" title="${st.n}">${cleared(i+1)?'★':i+1}</div>`).join('');
+}
+$('#tabs').addEventListener('click',e=>{ const b=e.target.closest('.tab'); if(!b) return; const n=+b.dataset.n;
+  if(!unlocked(n)){ toast(`Finish Stage ${n-1} first to unlock Stage ${n}.`); return; } showStage(n); });
+function showStage(n){
+  U.stage=n; S.stage=n; save();
+  for(let i=1;i<=4;i++) $('#st'+i).hidden=(i!==n);
+  renderTabs();
+  if(n===1) renderS1(); else if(n===2) renderS2(); else if(n===3) renderS3(); else renderS4();
+  window.scrollTo({top:0});
+}
+
+/* =====================================================================
+   STAGE 1 — pushers vs baby animals
+   ===================================================================== */
+const PUSHERS=[{id:'ms',name:'Middle schooler',emoji:'🧒',F:1},{id:'hs',name:'High schooler',emoji:'🧑',F:2},{id:'pl',name:'Power lifter',emoji:'🏋️',F:3}];
+const ANIMALS=[{id:'chick',name:'Baby chick',emoji:'🐥',m:1},{id:'calf',name:'Baby cow',emoji:'🐮',m:2},{id:'hippo',name:'Baby hippo',emoji:'🦛',m:3}];
+const LBL={S:'🐢 Slow',M:'Medium',F:'🚀 Fast'}, LBLS={S:'Slow',M:'Medium',F:'Fast'};
+const K1=0.8, S1B=0.65, T1=3.0;   // graph slope = K1*a (normalized units); Slow/Medium boundary slope S1B; Medium/Fast boundary slope 1
+const s1Key=(p,m)=>p+''+m;
+const s1Acc=(p,m)=>(p+1)/(m+1);
+const s1Answer=(p,m)=>p>m?'F':p===m?'M':'S';
+const s1End=a=>Math.min(1,1/(K1*a));
+const C1=Canvas('#cv1'), CG1=Canvas('#cvg1');
+
+function renderS1(){
+  const c=U.s1, P=PUSHERS[c.p], A=ANIMALS[c.m], k=s1Key(c.p,c.m), ch=S.s1.ans[k];
+  $('#s1sel').innerHTML=`<div class="selhead">${P.emoji} <b>${P.name}</b> pushes ${A.emoji} <b>${A.name}</b></div>
+    <div class="row"><button class="btn go" id="s1push" ${c.running?'disabled':''}>▶ Push</button>
+    <div class="seg">${['S','M','F'].map(v=>`<button class="segb c${v} ${ch===v?'on':''}" data-v="${v}">${LBL[v]}</button>`).join('')}</div></div>`;
+  let h=`<tr><th class="rh"></th>${ANIMALS.map(a=>`<th><span class="em">${a.emoji}</span>${a.name}</th>`).join('')}</tr>`;
+  PUSHERS.forEach((p,pi)=>{ h+=`<tr><th class="rh"><span style="font-size:18px">${p.emoji}</span> ${p.name}</th>`;
+    ANIMALS.forEach((a,mi)=>{ const kk=s1Key(pi,mi), v=S.s1.ans[kk], mk=S.s1.marks[kk];
+      h+=`<td><button class="cell ${pi===c.p&&mi===c.m?'sel':''} ${mk===true?'right':mk===false?'wrong':''}" data-p="${pi}" data-m="${mi}">
+        <span class="${v?'t'+v:'tq'}">${v?LBLS[v]:'?'}</span>${mk===true?'<span class="mk">✅</span>':mk===false?'<span class="mk">❌</span>':''}</button></td>`; });
+    h+='</tr>'; });
+  $('#s1grid').innerHTML=h;
+  const filled=Object.keys(S.s1.ans).length;
+  $('#s1check').textContent=S.s1.cleared?'✅ Grid complete':`✔ Check my grid (${filled}/9 filled)`;
+  $('#s1check').disabled=S.s1.cleared||filled<9;
+  if(S.s1.cleared){
+    $('#s1msg').className='msg good'; $('#s1msg').textContent='All 9 right! Stage 1 is cleared.';
+    $('#s1found').innerHTML=`<div class="found"><h3>What you found out</h3><ul>
+      <li><b>Bigger push, same load</b> (go across a column, top to bottom): the acceleration goes up.</li>
+      <li><b>Same pusher, bigger load</b> (go across a row, left to right): the acceleration goes down.</li>
+      <li>Down the diagonal, the push and the load grow <b>together</b>, and every one is <b>Medium</b>. The power lifter pushing the hippo speeds up exactly like the middle schooler pushing the chick!</li></ul>
+      In Stage 2 you'll measure this with real numbers.<div class="row" style="margin-top:8px"><button class="btn" id="s1next">Go to Stage 2 →</button></div></div>`;
+  } else $('#s1found').innerHTML='';
+}
+$('#st1').addEventListener('click',e=>{
+  const cell=e.target.closest('.cell');
+  if(cell){ if(U.s1.running) return; U.s1.p=+cell.dataset.p; U.s1.m=+cell.dataset.m; U.s1.t=0; U.s1.done=false; renderS1(); return; }
+  const sb=e.target.closest('.segb');
+  if(sb){ if(S.s1.cleared) return; const k=s1Key(U.s1.p,U.s1.m); S.s1.ans[k]=sb.dataset.v; delete S.s1.marks[k]; save(); $('#s1msg').textContent=''; renderS1(); return; }
+  if(e.target.closest('#s1push')){ if(U.s1.running) return; U.s1.t=0; U.s1.done=false; U.s1.running=true; renderS1(); return; }
+  if(e.target.closest('#s1next')){ showStage(2); return; }
+  if(e.target.closest('#s1check')){
+    let right=0; for(let p=0;p<3;p++) for(let m=0;m<3;m++){ const k=s1Key(p,m), ok=S.s1.ans[k]===s1Answer(p,m); S.s1.marks[k]=ok; if(ok) right++; }
+    if(right===9){ S.s1.cleared=true; save(); renderTabs(); renderS1(); return; }
+    save(); $('#s1msg').className='msg bad';
+    $('#s1msg').innerHTML=`<b>${right} of 9 right.</b> Fix the ❌ cells. Tap one, press <b>▶ Push</b>, and watch which colored wedge its line stays in.`;
+    renderS1();
+  }
+});
+function stepS1(dt){ const c=U.s1; if(!c.running) return; const a=s1Acc(c.p,c.m), te=s1End(a);
+  c.t+=dt/T1; if(c.t>=te){ c.t=te; c.running=false; c.done=true; S.s1.pushed[s1Key(c.p,c.m)]=1; save(); renderS1(); } }
+
+/* ----- stage 1 drawings (meters, y up = negative, ground at y=0) ----- */
+const PEOPLE={
+  ms:{h:1.50,shirt:'#36b5a8',pants:'#2d4f86',skin:'#f1c27d',hair:'#6b4421',limb:.075,torso:.23,arm:.06},
+  hs:{h:1.74,shirt:'#7b61c9',pants:'#34528f',skin:'#c68642',hair:'#1c1410',limb:.085,torso:.27,arm:.075},
+  pl:{h:1.84,shirt:'#e6294b',pants:'#2a2f45',skin:'#8d5524',hair:'#120c08',limb:.12,torso:.33,arm:.12}};
+function ik(x1,y1,x2,y2,L1,L2,bend){ const dx=x2-x1, dy=y2-y1, d=Math.max(1e-4,Math.min(Math.hypot(dx,dy),L1+L2-1e-4));
+  const a=Math.atan2(dy,dx), c=(L1*L1+d*d-L2*L2)/(2*L1*d), ang=a-bend*Math.acos(clamp(c,-1,1));
+  return {x:x1+L1*Math.cos(ang), y:y1+L1*Math.sin(ang)}; }
+function seg(g,pts,w,col){ g.strokeStyle=col; g.lineWidth=w; g.lineCap='round'; g.lineJoin='round'; g.beginPath(); g.moveTo(pts[0].x,pts[0].y); for(let i=1;i<pts.length;i++) g.lineTo(pts[i].x,pts[i].y); g.stroke(); }
+function shade(hex,f){ const n=parseInt(hex.slice(1),16); let r=n>>16,g2=(n>>8)&255,b=n&255; r=Math.round(r*f); g2=Math.round(g2*f); b=Math.round(b*f); return `rgb(${clamp(r,0,255)},${clamp(g2,0,255)},${clamp(b,0,255)})`; }
+function drawPerson(g,type,hx,hy,phase,moving){
+  const P=PEOPLE[type], H=P.h, shY=-0.81*H, hipY=-0.50*H;
+  const armL=0.41*H, up=armL*0.52, lo=armL*0.52, dyA=hy-(shY+0.03);
+  const reach=0.95*(up+lo), dxA=Math.sqrt(Math.max(0.01,reach*reach-dyA*dyA));
+  const shX=hx-dxA, hipX=shX-0.14, sh={x:shX,y:shY+0.03};
+  const legL=-hipY, L1=legL*0.53, L2=legL*0.53;
+  const sw=moving?Math.sin(phase)*0.21:0.10, base=hipX-0.06;
+  const f1={x:base+sw,y:moving?-Math.max(0,Math.cos(phase))*0.05:0}, f2={x:base-sw,y:moving?-Math.max(0,-Math.cos(phase))*0.05:0};
+  const hip={x:hipX,y:hipY};
+  const tx=shX-hipX, ty=shY-hipY, tl=Math.hypot(tx,ty), nx=ty/tl, ny=-tx/tl; // back-side normal
+  // back leg + back arm
+  const k2=ik(hip.x,hip.y,f2.x,f2.y,L1,L2,1); seg(g,[hip,k2,f2],P.limb,shade(P.pants,0.75));
+  g.fillStyle='#1a1d29'; rr(g,f2.x-0.05,f2.y-0.05,0.15,0.05,0.02); g.fill();
+  const e2=ik(sh.x-0.02,sh.y,hx-0.02,hy+0.01,up,lo,-1);
+  seg(g,[{x:sh.x-0.02,y:sh.y},e2,{x:hx-0.02,y:hy+0.01}],P.arm,shade(type==='hs'?P.shirt:P.skin,0.75));
+  // backpack / hood
+  if(type==='ms'){ const cx=hipX+tx*0.62+nx*(P.torso/2+0.05), cy=hipY+ty*0.62+ny*(P.torso/2+0.05);
+    g.save(); g.translate(cx,cy); g.rotate(Math.atan2(ty,tx)+Math.PI/2); g.fillStyle='#e0685a'; rr(g,-0.17,-0.08,0.34,0.16,0.05); g.fill(); g.fillStyle='#b84d42'; rr(g,-0.08,-0.10,0.16,0.04,0.02); g.fill(); g.restore(); }
+  if(type==='hs'){ g.fillStyle=shade(P.shirt,0.8); g.beginPath(); g.arc(shX+nx*0.07,shY+ny*0.07+0.02,0.075,0,Math.PI*2); g.fill(); }
+  // torso
+  seg(g,[{x:hipX,y:hipY},{x:shX,y:shY}],P.torso,P.shirt);
+  if(type==='pl'){ g.fillStyle=P.skin; g.beginPath(); g.arc(shX,shY+0.01,0.075,0,Math.PI*2); g.fill(); seg(g,[{x:hipX-0.04,y:hipY+0.02},{x:hipX+0.05,y:hipY-0.01}],0.07,'#2a2a2a'); }
+  // front leg
+  const k1=ik(hip.x,hip.y,f1.x,f1.y,L1,L2,1); seg(g,[hip,k1,f1],P.limb,P.pants);
+  g.fillStyle='#22263a'; rr(g,f1.x-0.05,f1.y-0.05,0.15,0.05,0.02); g.fill();
+  // head
+  const hX=shX+0.06, hY=shY-0.16, hr=0.105;
+  g.fillStyle=P.skin; g.fillRect(shX-0.03,shY-0.08,0.07,0.08);
+  g.beginPath(); g.arc(hX,hY,hr,0,Math.PI*2); g.fill();
+  g.save(); g.beginPath(); g.arc(hX,hY,hr,0,Math.PI*2); g.clip();
+  g.fillStyle=P.hair; g.beginPath();
+  if(type==='ms'){ g.arc(hX-0.02,hY-0.05,hr*1.02,Math.PI*0.95,Math.PI*2.05); g.fill(); g.fillRect(hX-hr-0.02,hY-0.06,0.07,0.09); }
+  else if(type==='hs'){ g.arc(hX-0.015,hY-0.06,hr,Math.PI*0.9,Math.PI*2.1); g.fill(); }
+  else { g.arc(hX-0.02,hY-0.075,hr,Math.PI,Math.PI*2); g.fill(); g.fillStyle='#ffd166'; g.fillRect(hX-hr,hY-0.06,hr*2,0.035); }
+  g.restore();
+  g.fillStyle='#14161f'; g.beginPath(); g.arc(hX+0.055,hY-0.005,0.014,0,Math.PI*2); g.fill();
+  g.strokeStyle='#5a2d1e'; g.lineWidth=0.012; g.beginPath(); g.arc(hX+0.05,hY+0.035,0.025,0.1,1.3); g.stroke();
+  // front arm
+  const e1=ik(sh.x,sh.y,hx,hy,up,lo,-1);
+  if(type==='hs') seg(g,[sh,e1,{x:hx,y:hy}],P.arm,P.shirt);
+  else { seg(g,[sh,e1,{x:hx,y:hy}],P.arm,P.skin); if(type==='ms') seg(g,[sh,{x:sh.x+(e1.x-sh.x)*0.45,y:sh.y+(e1.y-sh.y)*0.45}],P.arm+0.03,P.shirt); }
+  g.fillStyle=P.skin; g.beginPath(); g.arc(hx,hy,0.045,0,Math.PI*2); g.fill();
+}
+function drawCartBack(g,x){ // x = rear of basket; basket 0.95 long, top at -1.0, bottom -0.42
+  g.fillStyle='rgba(120,140,190,.18)'; g.beginPath(); g.moveTo(x,-1.0); g.lineTo(x+0.95,-1.0); g.lineTo(x+0.88,-0.42); g.lineTo(x+0.05,-0.42); g.closePath(); g.fill(); }
+function drawCartFront(g,x,wheelAng){
+  g.strokeStyle='#b9c7e6'; g.lineWidth=0.018; g.lineJoin='round';
+  g.beginPath(); g.moveTo(x,-1.0); g.lineTo(x+0.95,-1.0); g.lineTo(x+0.88,-0.42); g.lineTo(x+0.05,-0.42); g.closePath(); g.stroke();
+  g.globalAlpha=0.55; g.lineWidth=0.008;
+  for(let i=1;i<12;i++){ const f=i/12; const xt=x+0.95*f, xb=x+0.05+0.83*f; g.beginPath(); g.moveTo(xt,-1.0); g.lineTo(xb,-0.42); g.stroke(); }
+  for(let j=1;j<4;j++){ const yy=-1.0+0.58*j/4, k=j/4; g.beginPath(); g.moveTo(x+0.05*k,yy); g.lineTo(x+0.95-0.07*k,yy); g.stroke(); }
+  g.globalAlpha=1;
+  g.lineWidth=0.02; g.beginPath(); g.moveTo(x,-1.0); g.lineTo(x-0.13,-1.07); g.stroke();
+  g.strokeStyle='#e6294b'; g.lineWidth=0.04; g.beginPath(); g.moveTo(x-0.16,-1.08); g.lineTo(x-0.10,-1.06); g.stroke();
+  g.strokeStyle='#8f9bbd'; g.lineWidth=0.02;
+  g.beginPath(); g.moveTo(x+0.08,-0.42); g.lineTo(x+0.12,-0.10); g.moveTo(x+0.85,-0.42); g.lineTo(x+0.82,-0.10); g.moveTo(x+0.05,-0.14); g.lineTo(x+0.88,-0.14); g.stroke();
+  for(const wx of [x+0.13,x+0.81]){ g.fillStyle='#1b1f2e'; g.beginPath(); g.arc(wx,-0.055,0.055,0,Math.PI*2); g.fill(); g.strokeStyle='#6c7aa3'; g.lineWidth=0.012; g.stroke();
+    g.beginPath(); g.moveTo(wx,-0.055); g.lineTo(wx+Math.cos(wheelAng)*0.045,-0.055+Math.sin(wheelAng)*0.045); g.stroke(); }
+}
+function drawAnimal(g,id,cx,by){ // by = sitting level inside basket (negative y)
+  if(id==='chick'){
+    g.fillStyle='#ffd84a'; g.beginPath(); g.arc(cx,by-0.09,0.085,0,Math.PI*2); g.fill();
+    g.beginPath(); g.arc(cx+0.06,by-0.19,0.06,0,Math.PI*2); g.fill();
+    g.fillStyle='#f2b81f'; g.beginPath(); g.ellipse(cx-0.02,by-0.09,0.045,0.03,-0.4,0,Math.PI*2); g.fill();
+    g.fillStyle='#ff8a3d'; g.beginPath(); g.moveTo(cx+0.115,by-0.2); g.lineTo(cx+0.155,by-0.185); g.lineTo(cx+0.115,by-0.17); g.fill();
+    g.fillStyle='#14161f'; g.beginPath(); g.arc(cx+0.08,by-0.205,0.011,0,Math.PI*2); g.fill();
+    g.strokeStyle='#ffd84a'; g.lineWidth=0.012; g.beginPath(); g.moveTo(cx+0.05,by-0.245); g.lineTo(cx+0.04,by-0.275); g.moveTo(cx+0.065,by-0.245); g.lineTo(cx+0.075,by-0.28); g.stroke();
+  } else if(id==='calf'){
+    g.fillStyle='#f4f1ea'; g.beginPath(); g.ellipse(cx-0.05,by-0.13,0.30,0.17,0,0,Math.PI*2); g.fill();
+    g.fillStyle='#22232b'; g.beginPath(); g.ellipse(cx-0.15,by-0.18,0.08,0.06,0.3,0,Math.PI*2); g.fill();
+    g.beginPath(); g.ellipse(cx+0.05,by-0.09,0.06,0.05,-0.2,0,Math.PI*2); g.fill();
+    g.beginPath(); g.ellipse(cx-0.27,by-0.08,0.04,0.05,0,0,Math.PI*2); g.fill();
+    const hx=cx+0.26, hy=by-0.30;
+    g.fillStyle='#22232b'; g.beginPath(); g.ellipse(hx-0.09,hy-0.06,0.06,0.03,-0.5,0,Math.PI*2); g.fill(); g.beginPath(); g.ellipse(hx+0.08,hy-0.07,0.06,0.03,0.5,0,Math.PI*2); g.fill();
+    g.fillStyle='#f4f1ea'; g.beginPath(); g.ellipse(hx,hy,0.11,0.10,0,0,Math.PI*2); g.fill();
+    g.fillStyle='#22232b'; g.beginPath(); g.ellipse(hx-0.03,hy-0.04,0.05,0.04,0,0,Math.PI*2); g.fill();
+    g.fillStyle='#f3a6b4'; g.beginPath(); g.ellipse(hx+0.05,hy+0.05,0.075,0.05,0,0,Math.PI*2); g.fill();
+    g.fillStyle='#9a5a66'; g.beginPath(); g.arc(hx+0.02,hy+0.05,0.012,0,Math.PI*2); g.arc(hx+0.08,hy+0.05,0.012,0,Math.PI*2); g.fill();
+    g.fillStyle='#fff'; g.beginPath(); g.arc(hx+0.04,hy-0.03,0.022,0,Math.PI*2); g.fill(); g.fillStyle='#14161f'; g.beginPath(); g.arc(hx+0.045,hy-0.03,0.012,0,Math.PI*2); g.fill();
+  } else {
+    g.fillStyle='#9a86b8'; g.beginPath(); g.ellipse(cx-0.06,by-0.18,0.40,0.27,0,0,Math.PI*2); g.fill();
+    g.fillStyle='#b3a2cc'; g.beginPath(); g.ellipse(cx-0.04,by-0.08,0.30,0.12,0,0,Math.PI*2); g.fill();
+    const hx=cx+0.33, hy=by-0.33;
+    g.fillStyle='#8a76a8'; g.beginPath(); g.ellipse(hx-0.08,hy-0.13,0.035,0.03,0,0,Math.PI*2); g.fill(); g.beginPath(); g.ellipse(hx+0.04,hy-0.14,0.035,0.03,0,0,Math.PI*2); g.fill();
+    g.fillStyle='#9a86b8'; g.beginPath(); g.ellipse(hx,hy,0.16,0.13,0,0,Math.PI*2); g.fill();
+    g.fillStyle='#c7a3b7'; g.beginPath(); g.ellipse(hx+0.12,hy+0.05,0.13,0.10,0,0,Math.PI*2); g.fill();
+    g.fillStyle='#6d4f6a'; g.beginPath(); g.ellipse(hx+0.10,hy+0.01,0.016,0.012,0,0,Math.PI*2); g.ellipse(hx+0.18,hy+0.01,0.016,0.012,0,0,Math.PI*2); g.fill();
+    g.fillStyle='#fff'; g.beginPath(); g.arc(hx+0.01,hy-0.05,0.025,0,Math.PI*2); g.fill(); g.fillStyle='#14161f'; g.beginPath(); g.arc(hx+0.018,hy-0.05,0.014,0,Math.PI*2); g.fill();
+    g.strokeStyle='#6d4f6a'; g.lineWidth=0.01; g.beginPath(); g.arc(hx+0.13,hy+0.08,0.05,0.3,2.6); g.stroke();
+  }
+}
+function drawS1Scene(){
+  const c=C1; if(!c.fit()) return; const g=c.g, W=c.W, H=c.H;
+  const st=U.s1, P=PUSHERS[st.p], A=ANIMALS[st.m], a=s1Acc(st.p,st.m);
+  const gy=H-20, sc=(H-30)/2.05;
+  // backdrop: store aisle
+  const bg=g.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#101a36'); bg.addColorStop(1,'#0a1024'); g.fillStyle=bg; g.fillRect(0,0,W,H);
+  const shelfTop=gy-1.85*sc, shelfH=1.75*sc;
+  for(let sx=-20; sx<W; sx+=Math.max(180,2.4*sc)){ g.fillStyle='#152043'; g.fillRect(sx+8,shelfTop,Math.max(170,2.4*sc)-16,shelfH);
+    for(let r=0;r<4;r++){ const yy=shelfTop+shelfH*(r+1)/4.2; g.fillStyle='#1d2b56'; g.fillRect(sx+8,yy,Math.max(170,2.4*sc)-16,4);
+      for(let b=0;b<7;b++){ const hue=(sx*7+r*53+b*97)%360; g.fillStyle=`hsla(${hue},45%,45%,.28)`; const bw=Math.max(170,2.4*sc)/9; g.fillRect(sx+16+b*bw*1.15,yy-shelfH/5.6,bw*0.85,shelfH/5.6); } } }
+  g.fillStyle='#141e3d'; g.fillRect(0,gy,W,H-gy); g.strokeStyle='#26355f'; g.lineWidth=1;
+  for(let x=0;x<W;x+=0.5*sc){ g.beginPath(); g.moveTo(x,gy); g.lineTo(x-14,H); g.stroke(); }
+  g.beginPath(); g.moveTo(0,gy); g.lineTo(W,gy); g.stroke();
+  // positions
+  const x0=1.3*sc+10, travelPx=Math.max(40,W-x0-1.0*sc-14), Ppx=travelPx/0.53;
+  const d=0.5*a*st.t*st.t, cartPx=x0+d*Ppx;
+  const moving=st.running;
+  g.save(); g.translate(0,gy); g.scale(sc,sc);
+  const cx=cartPx/sc;
+  drawCartBack(g,cx);
+  drawAnimal(g,A.id,cx+0.45,{chick:-0.9,calf:-0.8,hippo:-0.74}[A.id]);
+  drawCartFront(g,cx,d*Ppx/sc/0.055);
+  drawPerson(g,P.id,cx-0.15,-1.07,d*Ppx/sc/0.33*Math.PI,moving||(!st.done&&st.t>0));
+  g.restore();
+  // push arrow
+  const ay=gy-1.86*sc, ax=cartPx+0.1*sc, L=0.27*sc*P.F;
+  arrow(g,ax,ay,ax+L,ay,'#7cc4ff',4,12); label(g,'push',ax+L+8,ay,{align:'left',color:'#7cc4ff',size:12});
+  label(g,`${P.emoji} ${P.name} → ${A.emoji} ${A.name}`,W-10,14,{align:'right',size:12,color:'#eaf0ff'});
+  if(!st.running&&!st.done) label(g,'Press ▶ Push',W-10,36,{align:'right',size:12,color:'#ffd166'});
+  if(st.done) label(g,"Time's up: the push is over",W-10,36,{align:'right',size:12,color:'#9fb0d6'});
+}
+function drawS1Graph(){
+  const c=CG1; if(!c.fit()) return; const g=c.g, W=c.W, H=c.H;
+  g.fillStyle='#0a1024'; g.fillRect(0,0,W,H);
+  const box={x:34,y:10,w:W-46,h:H-40};
+  const X=t=>box.x+t*box.w, Y=v=>box.y+box.h-v*box.h;
+  g.fillStyle='#0c1428'; g.fillRect(box.x,box.y,box.w,box.h);
+  const tri=(pts,col)=>{ g.fillStyle=col; g.beginPath(); g.moveTo(X(pts[0][0]),Y(pts[0][1])); pts.slice(1).forEach(p=>g.lineTo(X(p[0]),Y(p[1]))); g.closePath(); g.fill(); };
+  tri([[0,0],[1,0],[1,S1B]],'rgba(90,169,255,.20)');
+  tri([[0,0],[1,S1B],[1,1]],'rgba(60,207,142,.20)');
+  tri([[0,0],[1,1],[0,1]],'rgba(255,122,89,.20)');
+  g.strokeStyle='rgba(255,255,255,.18)'; g.lineWidth=1; g.setLineDash([5,5]);
+  g.beginPath(); g.moveTo(X(0),Y(0)); g.lineTo(X(1),Y(S1B)); g.moveTo(X(0),Y(0)); g.lineTo(X(1),Y(1)); g.stroke(); g.setLineDash([]);
+  label(g,'🐢 Slow',X(0.86),Y(S1B*0.33),{color:'#a9d3ff',size:14,bg:false});
+  label(g,'Medium',X(0.86),Y((S1B+1)/2*0.93),{color:'#9ff0c9',size:14,bg:false});
+  label(g,'🚀 Fast',X(0.3),Y(0.8),{color:'#ffc0ad',size:14,bg:false});
+  g.strokeStyle='#5b6f9f'; g.lineWidth=1.5; g.beginPath(); g.moveTo(box.x,box.y); g.lineTo(box.x,box.y+box.h); g.lineTo(box.x+box.w,box.y+box.h); g.stroke();
+  g.font=`700 12px ${FONT}`; g.textBaseline='middle'; g.textAlign='center'; g.fillStyle='#c792ff'; g.fillText('time',box.x+box.w/2,box.y+box.h+14);
+  g.save(); g.translate(16,box.y+box.h/2); g.rotate(-Math.PI/2); g.fillStyle='#ff9f43'; g.fillText('velocity',0,0); g.restore();
+  // earlier pushes
+  const st=U.s1, cur=s1Key(st.p,st.m);
+  for(const k of Object.keys(S.s1.pushed)){ if(k===cur&&(st.running||st.done)) continue; const p=+k[0], m=+k[1], a=s1Acc(p,m), te=s1End(a);
+    g.strokeStyle='rgba(234,240,255,.28)'; g.lineWidth=2; g.beginPath(); g.moveTo(X(0),Y(0)); g.lineTo(X(te),Y(K1*a*te)); g.stroke();
+    g.font=`12px ${FONT}`; g.textAlign='left'; g.globalAlpha=0.7; g.fillText(PUSHERS[p].emoji+ANIMALS[m].emoji,Math.min(X(te)+3,box.x+box.w-28),Math.max(Y(K1*a*te)+(te<1?8:0),box.y+8)); g.globalAlpha=1; }
+  if(st.running||st.done){ const a=s1Acc(st.p,st.m);
+    g.strokeStyle='#ffd166'; g.lineWidth=3.5; g.lineCap='round'; g.beginPath(); g.moveTo(X(0),Y(0)); g.lineTo(X(st.t),Y(K1*a*st.t)); g.stroke();
+    g.fillStyle='#ffd166'; g.beginPath(); g.arc(X(st.t),Y(K1*a*st.t),5,0,Math.PI*2); g.fill(); }
+}
+
+/* =====================================================================
+   SHARED LAB RIG (Stage 2 and Stage 4)
+   ===================================================================== */
+function rigView(c,box){ const bw=box.x1-box.x0, bh=box.y1-box.y0, s=Math.min(c.W/bw,c.H/bh);
+  const ox=(c.W-bw*s)/2-box.x0*s, oy=(c.H-bh*s)/2+box.y1*s; return {s,X:x=>ox+x*s,Y:y=>oy-y*s}; }
+const CART_L=0.22, WR=0.012, CBH=0.035, PR=0.025, HOOKH=0.045, TABLE_EDGE=0.76, FLOOR=-0.9;
+function drawDisc(g,V,cx,y,w,th,top){ const X0=V.X(cx-w/2), X1=V.X(cx+w/2), Y0=V.Y(y+th), Y1=V.Y(y);
+  const gr=g.createLinearGradient(X0,0,X1,0); gr.addColorStop(0,'#8a6a22'); gr.addColorStop(0.5,'#e2bd5c'); gr.addColorStop(1,'#8a6a22');
+  g.fillStyle=gr; rr(g,X0,Y0,X1-X0,Y1-Y0,2); g.fill(); g.strokeStyle='#5c4410'; g.lineWidth=1; g.stroke(); }
+function drawBlock(g,V,x,y,w,h){ const X0=V.X(x), Y0=V.Y(y+h); const pw=w*V.s, ph=h*V.s;
+  g.fillStyle='#7f93b8'; rr(g,X0,Y0,pw,ph,2); g.fill(); g.fillStyle='#a9bad8'; g.fillRect(X0+1,Y0+1,pw-2,Math.max(1.5,ph*0.22)); g.strokeStyle='#4a5a7c'; g.lineWidth=1; rr(g,X0,Y0,pw,ph,2); g.stroke(); }
+function drawRig(c,box,lanes,opt={}){
+  const g=c.g, V=rigView(c,box), s=V.s;
+  g.fillStyle='#0a1024'; g.fillRect(0,0,c.W,c.H);
+  // floor
+  g.fillStyle='#121b36'; g.fillRect(0,V.Y(FLOOR),c.W,c.H-V.Y(FLOOR)); g.strokeStyle='#2c3d6b'; g.lineWidth=1.5; g.beginPath(); g.moveTo(0,V.Y(FLOOR)); g.lineTo(c.W,V.Y(FLOOR)); g.stroke();
+  // table
+  const backY=opt.twoLane?0.25:0.02;
+  g.fillStyle='#263866'; g.fillRect(V.X(-0.1),V.Y(backY),V.X(TABLE_EDGE)-V.X(-0.1),V.Y(0)-V.Y(backY));
+  g.fillStyle='#1d2b52'; g.fillRect(V.X(-0.08),V.Y(-0.035),0.035*s,V.Y(FLOOR)-V.Y(-0.035)); g.fillRect(V.X(0.69),V.Y(-0.035),0.035*s,V.Y(FLOOR)-V.Y(-0.035));
+  g.fillStyle='#34497f'; g.fillRect(V.X(-0.1),V.Y(0),V.X(TABLE_EDGE)-V.X(-0.1),0.035*s);
+  // ruler on the front face
+  g.strokeStyle='#9fb0d6'; g.fillStyle='#9fb0d6'; g.lineWidth=1; g.font=`600 ${Math.max(9,Math.min(11,s*0.03))}px ${FONT}`; g.textAlign='center'; g.textBaseline='middle';
+  for(let i=0;i<=10;i++){ const x=CART_L+i*0.05, X=V.X(x); g.beginPath(); g.moveTo(X,V.Y(0)); g.lineTo(X,V.Y(0)+(i%2?4:8)); g.stroke(); if(i%2===0&&s>220) g.fillText((i*0.05).toFixed(1),X,V.Y(-0.035)+9); }
+  if(s>220){ g.textAlign='left'; g.fillText('m',V.X(CART_L+0.515),V.Y(-0.035)+9); }
+  const order=[...lanes].sort((a,b)=>b.y-a.y);
+  for(const L of order){
+    const ly=L.y, pcx=L.px, pcy=ly+HOOKH-PR, sx=pcx+PR;
+    // track + stop
+    g.strokeStyle='#4a5f95'; g.lineWidth=2; g.beginPath(); g.moveTo(V.X(-0.06),V.Y(ly)); g.lineTo(V.X(TABLE_EDGE-0.01),V.Y(ly)); g.stroke();
+    g.fillStyle='#e6294b'; g.fillRect(V.X(CART_L+D+0.002),V.Y(ly+0.03),0.02*s,0.03*s);
+    // pulley mount
+    g.strokeStyle='#6c7aa3'; g.lineWidth=Math.max(2,0.012*s);
+    g.beginPath(); g.moveTo(V.X(TABLE_EDGE-0.03),V.Y(ly>0?0:-0.01)); g.lineTo(V.X(pcx),V.Y(ly>0?0:-0.01)); g.lineTo(V.X(pcx),V.Y(pcy)); g.stroke();
+    if(ly>0){ g.beginPath(); g.moveTo(V.X(TABLE_EDGE-0.02),V.Y(0)); g.lineTo(V.X(TABLE_EDGE-0.02),V.Y(ly)); g.stroke(); }
+    // string
+    const disp=clamp(L.disp,0,D), rear=disp, hookX=rear+CART_L, hookY=ly+HOOKH;
+    const hTop=pcy-0.10-disp;
+    g.strokeStyle='#e8e8e8'; g.lineWidth=1.4; g.beginPath(); g.moveTo(V.X(hookX),V.Y(hookY)); g.lineTo(V.X(pcx),V.Y(pcy+PR));
+    g.arc(V.X(pcx),V.Y(pcy),PR*s,-Math.PI/2,0); g.lineTo(V.X(sx),V.Y(hTop)); g.stroke();
+    // pulley wheel
+    g.fillStyle='#c8d2ea'; g.beginPath(); g.arc(V.X(pcx),V.Y(pcy),PR*s,0,Math.PI*2); g.fill(); g.fillStyle='#55648c'; g.beginPath(); g.arc(V.X(pcx),V.Y(pcy),PR*s*0.35,0,Math.PI*2); g.fill();
+    // cart
+    const X0=V.X(rear), X1=V.X(rear+CART_L);
+    for(const wx of [rear+0.04,rear+CART_L-0.04]){ g.fillStyle='#1b1f2e'; g.beginPath(); g.arc(V.X(wx),V.Y(ly+WR),Math.max(3.5,WR*s),0,Math.PI*2); g.fill(); g.strokeStyle='#8fa0c8'; g.lineWidth=1.2; g.stroke(); }
+    g.fillStyle=L.color; rr(g,X0,V.Y(ly+WR+CBH),X1-X0,CBH*s,4); g.fill(); g.strokeStyle='rgba(255,255,255,.45)'; g.lineWidth=1; g.stroke();
+    g.fillStyle='#e8e8e8'; g.beginPath(); g.arc(V.X(hookX),V.Y(hookY),2.2,0,Math.PI*2); g.fill();
+    if(L.letter) label(g,L.letter,(X0+X1)/2,V.Y(ly+WR+CBH/2),{bg:false,size:Math.max(11,Math.min(16,CBH*s*0.9)),weight:900,color:'#0f1830'});
+    let top=ly+WR+CBH; const dth=Math.max(0.014,6/s);
+    for(let i=0;i<(L.cartDiscs||0);i++) drawDisc(g,V,rear+0.09,top+i*dth,0.075,dth);
+    const stackTop=top+(L.cartDiscs||0)*dth;
+    if(L.blocks){ const cols=L.blockCols||3, bw=L.blockW||0.06, bh=Math.max(L.blockH||0.035,7/s);
+      for(let i=0;i<L.blocks;i++){ const col=i%cols, row=Math.floor(i/cols); drawBlock(g,V,rear+0.015+col*(bw+0.004),top+row*(bh+0.002),bw,bh); }
+      top=top+Math.ceil(L.blocks/cols)*(bh+0.002); }
+    const loadTop=Math.max(top,stackTop);
+    if(L.cartLabel) label(g,L.cartLabel,(X0+X1)/2,V.Y(loadTop)-11,{size:12,color:L.textColor||'#eaf0ff'});
+    // hanger
+    const hx=sx, rodTop=hTop, rodBot=hTop-0.15;
+    g.strokeStyle='#c8d2ea'; g.lineWidth=2; g.beginPath(); g.moveTo(V.X(hx),V.Y(rodTop)); g.lineTo(V.X(hx),V.Y(rodBot)); g.stroke();
+    g.beginPath(); g.arc(V.X(hx),V.Y(rodTop)+3,3,Math.PI,Math.PI*2.6); g.stroke();
+    const baseH=Math.max(0.012,5/s); g.fillStyle='#8b97b8'; rr(g,V.X(hx-0.03),V.Y(rodBot+baseH),0.06*s,baseH*s,2); g.fill();
+    for(let i=0;i<(L.hangDiscs||0);i++) drawDisc(g,V,hx,rodBot+baseH+i*dth,0.062,dth);
+    const stackTopH=rodBot+baseH+(L.hangDiscs||0)*dth, midY=(rodBot+stackTopH)/2;
+    // gravity arrow
+    const Fg=L.mh/1000*G, Lpx=14+24*Fg;
+    arrow(g,V.X(hx),V.Y(midY),V.X(hx),V.Y(midY)+Lpx,'#7cc4ff',Math.max(3,s*0.009),11);
+    const side=L.labelSide==='left'?-1:1, al=side<0?'right':'left';
+    label(g,`${L.mh} g`,V.X(hx)+side*(0.04*s+4),V.Y(stackTopH)-2,{align:al,size:12,color:L.textColor||'#eaf0ff'});
+    label(g,`Fg = ${f2(Fg)} N`,V.X(hx)+side*10,V.Y(midY)+Lpx*0.7,{align:al,size:12,color:'#7cc4ff'});
+  }
+  return V;
+}
+
+/* =====================================================================
+   STAGE 2 — cart & pulley lab
+   ===================================================================== */
+const C2=Canvas('#cv2'), CG2=Canvas('#cvg2');
+const BOX1={x0:-0.1,x1:1.12,y0:-0.95,y1:0.26};
+function cfgA(n){ const mh=HANGER+DISC*n, load=S.cart+DISC*(NDISC-n); return {task:'A',n,mh,load,M:(mh+load)/1000,F:mh/1000*G,cartDiscs:NDISC-n,hangDiscs:n,blocks:0}; }
+function cfgB(k){ const mh=B_HANG, load=S.cart+BLOCK*k; return {task:'B',n:k,mh,load,M:(mh+load)/1000,F:mh/1000*G,cartDiscs:0,hangDiscs:(B_HANG-HANGER)/DISC,blocks:k}; }
+const curCfg=()=>S.s2.task==='B'?cfgB(U.s2.kB):cfgA(U.s2.nA);
+function axesFor(task){ const cfgs=task==='A'?[...Array(NDISC+1).keys()].map(cfgA):[...Array(NBLOCK+1).keys()].map(cfgB);
+  const amax=Math.max(...cfgs.map(c=>c.F/c.M)), amin=Math.min(...cfgs.map(c=>c.F/c.M));
+  return {t:niceMax(Math.sqrt(2*D/amin)*1.04,6), x:{max:0.5,step:0.1}, v:niceMax(Math.sqrt(2*amax*D)*1.04,5)}; }
+const s2Done=t=>S.s2[t].length>=TRIALS_NEEDED;
+function s2TabUnlocked(t){ if(U.teacher) return true; if(t==='A') return true; if(t==='B') return s2Done('A'); return s2Done('A')&&s2Done('B'); }
+
+function renderS2(){
+  const t=S.s2.task;
+  $('#s2tabs').innerHTML=[['A','Task A · Change the force',`${Math.min(S.s2.A.length,99)}/${TRIALS_NEEDED}`],['B','Task B · Change the mass',`${S.s2.B.length}/${TRIALS_NEEDED}`],['Q','✍️ Check questions',S.s2.cleared?'✅':'']]
+    .map(([k,nm,sm])=>`<button class="stab ${t===k?'sel':''} ${s2TabUnlocked(k)?'':'locked'}" data-t="${k}">${s2TabUnlocked(k)?'':'🔒 '}${nm}<span class="sm">${sm}</span></button>`).join('');
+  const isQ=t==='Q'; $('#s2lab').hidden=isQ; $('#s2q').hidden=!isQ;
+  if(isQ){ renderS2Q(); return; }
+  buildS2Ctrl(); renderS2Log(); hideS2Panel();
+}
+$('#s2tabs').addEventListener('click',e=>{ const b=e.target.closest('.stab'); if(!b) return; const t=b.dataset.t;
+  if(!s2TabUnlocked(t)){ toast(t==='B'?`Run ${TRIALS_NEEDED} different trials in Task A first.`:`Finish ${TRIALS_NEEDED} trials in both tasks first.`); return; }
+  if(U.s2.run&&!U.s2.run.done) return; U.s2.run=null; S.s2.task=t; save(); renderS2(); });
+function buildS2Ctrl(){
+  const t=S.s2.task, el=$('#s2ctrl');
+  const intro=t==='A'
+    ? `<h2>Task A · Same total mass, change the force</h2><p class="small">Move <b>50 g</b> masses between the cart and the hanger. Everything that moves (cart, load and hanger) always adds up to <b class="vm">${f2(cfgA(0).M)} kg</b>, so only the <span class="vF">pulling force</span> changes.</p>`
+    : `<h2>Task B · Same force, change the mass</h2><p class="small">The hanger stays at <b>100 g</b>, so the <span class="vF">pulling force</span> stays <b class="vF">${f2(B_HANG/1000*G)} N</b>. Add <b>200 g</b> blocks to the cart to change the <span class="vm">total mass</span>.</p>`;
+  el.innerHTML=intro+`<div class="ctlrow"><span class="lbl">${t==='A'?'50 g masses on the hanger':'200 g blocks on the cart'}</span>
+      <div class="stepper" id="s2step"><button class="sb" data-d="-1" aria-label="fewer">−</button><div class="sv"></div><button class="sb" data-d="1" aria-label="more">+</button></div>
+      <span class="small" style="margin:0" id="s2stepnote"></span></div>
+    <div class="readouts" id="s2ro"></div>
+    <div class="row"><button class="btn go" id="s2go">▶ Release</button><button class="btn secondary small" id="s2speed"></button>
+      <div class="pips" id="s2pips" style="margin-left:auto"></div></div>`;
+  const get=()=>t==='A'?U.s2.nA:U.s2.kB, set=v=>{ if(t==='A') U.s2.nA=v; else U.s2.kB=v; };
+  bindStepper($('#s2step'),get,set,0,t==='A'?NDISC:NBLOCK,()=>{ U.s2.run=null; hideS2Panel(); updateS2Ctrl(); });
+  $('#s2go').addEventListener('click',s2Release);
+  $('#s2speed').addEventListener('click',()=>{ U.speed=U.speed===1?0.5:1; updateS2Ctrl(); });
+  updateS2Ctrl();
+}
+function updateS2Ctrl(){
+  const c=curCfg(), t=S.s2.task; if(!$('#s2ro')) return;
+  $('#s2stepnote').textContent=t==='A'?`(${NDISC-c.n} on the cart)`:`(${c.n*BLOCK} g added)`;
+  $('#s2ro').innerHTML=`<div class="ro"><div class="k">Hanging mass</div><div class="v">${c.mh} g</div></div>
+    <div class="ro"><div class="k">Cart + load</div><div class="v">${c.load} g</div></div>
+    <div class="ro"><div class="k">Total mass <span class="vm">m</span></div><div class="v vm">${f2(c.M)} kg</div></div>
+    <div class="ro"><div class="k">Force <span class="vF">F</span> = m<sub>h</sub>g</div><div class="v vF">${f2(c.F)} N</div></div>`;
+  $('#s2speed').textContent=U.speed===1?'🐢 Slow-mo: off':'🐢 Slow-mo: on';
+  const r=U.s2.run; $('#s2go').disabled=!!(r&&!r.done);
+  const n=S.s2[t].length; let p=''; for(let i=0;i<TRIALS_NEEDED;i++) p+=`<span class="pip ${i<n?'on':''}">${i<n?'✓':''}</span>`;
+  $('#s2pips').innerHTML=p+`<span>${n}/${TRIALS_NEEDED} trials</span>`;
+}
+function s2Release(){
+  const r=U.s2.run; if(r&&!r.done) return;
+  const cfg=curCfg(), a=cfg.F/cfg.M;
+  U.s2.run={cfg,a,t:0,tEnd:Math.sqrt(2*D/a),done:false}; hideS2Panel(); updateS2Ctrl();
+}
+function stepS2(dt){ const r=U.s2.run; if(!r||r.done) return; r.t+=dt*U.speed; if(r.t>=r.tEnd){ r.t=r.tEnd; s2Finish(); } }
+function s2Finish(){
+  const r=U.s2.run; r.done=true; const list=S.s2[r.cfg.task], dup=list.find(x=>x.n===r.cfg.n); let rec=null;
+  if(!dup){ rec={id:list.length+1,n:r.cfg.n,mh:r.cfg.mh,load:r.cfg.load,M:r.cfg.M,F:r.cfg.F,a:r.a}; list.push(rec); save(); }
+  r.rec=rec; r.dup=dup;
+  const c=r.cfg, t=c.task, n=list.length;
+  let h='';
+  if(rec) h+=`<div class="banner good">✅ Trial #${rec.id} recorded</div>`;
+  else h+=`<div class="banner info">Same setup as trial #${dup.id}, so no new row was added.</div>`;
+  h+=`<div class="worked">Pull: <span class="vF">F</span> = ${f2(c.mh/1000)} kg × 9.8 m/s² = <b>${f2(c.F)} N</b><br>
+    Total mass <span class="vm">m</span> = <b>${f2(c.M)} kg</b> (cart + load + hanger)<br>
+    Slope of the <span class="vv">v</span>–<span class="vt">t</span> line: <span class="va">a</span> = <b>${f2(r.a)} m/s²</b></div>`;
+  if(!rec) h+=`<div class="small" style="margin:0">Change the masses for your next trial.</div>`;
+  if(rec && n===TRIALS_NEEDED)
+    h+= t==='A' ? `<div class="row"><button class="btn small" data-go="B">Go to Task B →</button><span class="small" style="margin:0">or run more trials</span></div>`
+                : `<div class="row"><button class="btn small" data-go="Q">Go to the questions →</button><span class="small" style="margin:0">or run more trials</span></div>`;
+  renderS2(); showS2Panel(h); renderS2Log(true);
+}
+function showS2Panel(h){ const p=$('#s2panel'); p.innerHTML=h; p.classList.add('show'); }
+function hideS2Panel(){ $('#s2panel').classList.remove('show'); }
+$('#s2panel').addEventListener('click',e=>{ const b=e.target.closest('[data-go]'); if(!b) return; U.s2.run=null; S.s2.task=b.dataset.go; save(); renderS2(); });
+function renderS2Log(flash){
+  const t=S.s2.task, list=S.s2[t];
+  $('#s2ltitle').textContent=t==='A'?'Task A data · same total mass':'Task B data · same force';
+  if(!list.length){ $('#s2log').innerHTML='<div class="empty">No trials yet. Set the masses and press ▶ Release.</div>'; $('#s2lognote').textContent=''; return; }
+  const rows=[...list].reverse().map((r,i)=>`<tr class="${flash&&i===0?'new':''}"><td>${r.id}</td><td>${r.mh}</td><td>${r.load}</td><td class="vm">${f2(r.M)}</td><td class="vF">${f2(r.F)}</td><td class="va">${f2(r.a)}</td></tr>`).join('');
+  $('#s2log').innerHTML=`<table><thead><tr><th>#</th><th>Hanging (g)</th><th>Cart + load (g)</th><th>Total <span class="vm">m</span> (kg)</th><th><span class="vF">F</span> (N)</th><th><span class="va">a</span> (m/s²)</th></tr></thead><tbody>${rows}</tbody></table>`;
+  $('#s2log').scrollTop=0;
+  $('#s2lognote').textContent=`${list.length} trial${list.length>1?'s':''}${list.length>6?' · scroll down for earlier ones':''} · the app finds a from the slope of each v–t graph`;
+}
+function drawS2(){
+  if(S.s2.task==='Q') return;
+  const c=C2; if(c.fit()){
+    const r=U.s2.run, cfg=r?r.cfg:curCfg(), disp=r?0.5*r.a*r.t*r.t:0;
+    drawRig(c,BOX1,[{y:0,px:0.79,disp,color:'#3d6fd8',cartDiscs:cfg.cartDiscs,hangDiscs:cfg.hangDiscs,blocks:cfg.blocks,blockCols:3,blockW:0.062,blockH:0.032,mh:cfg.mh,cartLabel:`${cfg.load} g`}]);
+    if(!r) label(c.g,'Set the masses, then press ▶ Release',10,14,{align:'left',size:12,color:'#ffd166'});
+    else if(!r.done) label(c.g,`t = ${f2(r.t)} s`,10,14,{align:'left',size:13,color:'#c792ff'});
+  }
+  const cg=CG2; if(!cg.fit()) return; const g=cg.g, W=cg.W, H=cg.H; g.fillStyle='#0a1024'; g.fillRect(0,0,W,H);
+  const ax=axesFor(S.s2.task), side=W>=440;
+  const b1=side?{x:46,y:22,w:W/2-62,h:H-58}:{x:46,y:22,w:W-58,h:H/2-50}, b2=side?{x:W/2+40,y:22,w:W/2-52,h:H-58}:{x:46,y:H/2+16,w:W-58,h:H/2-50};
+  const P1=plotFrame(g,b1,{xMax:ax.t.max,xStep:ax.t.step*(side?1:1),yMax:0.5,yStep:0.1,xLabel:'time t (s)',xColor:'#c792ff',yLabel:'position x (m)',yColor:'#ffc46b',yLabW:32});
+  const P2=plotFrame(g,b2,{xMax:ax.t.max,xStep:ax.t.step,yMax:ax.v.max,yStep:ax.v.step,xLabel:'time t (s)',xColor:'#c792ff',yLabel:'velocity v (m/s)',yColor:'#ff9f43',yLabW:32});
+  label(g,'Position vs. time',b1.x+4,b1.y-11,{align:'left',size:12,bg:false,color:'#ffc46b'});
+  label(g,'Velocity vs. time',b2.x+4,b2.y-11,{align:'left',size:12,bg:false,color:'#ff9f43'});
+  const curve=(P,a,tmax,kind,col,w)=>{ g.strokeStyle=col; g.lineWidth=w; g.lineCap='round'; g.beginPath();
+    const N=40; for(let i=0;i<=N;i++){ const t=tmax*i/N, y=kind==='x'?0.5*a*t*t:a*t; const X=P.X(t), Y=P.Y(y); i?g.lineTo(X,Y):g.moveTo(X,Y); } g.stroke(); };
+  const r=U.s2.run;
+  for(const tr of S.s2[S.s2.task]){ if(r&&r.done&&r.rec===tr) continue; const te=Math.sqrt(2*D/tr.a);
+    curve(P1,tr.a,te,'x','rgba(255,196,107,.28)',1.6); curve(P2,tr.a,te,'v','rgba(255,159,67,.28)',1.6);
+    g.font=`600 10px ${FONT}`; g.fillStyle='rgba(234,240,255,.5)'; g.textAlign='left'; g.fillText('#'+tr.id,Math.min(P2.X(te)+3,b2.x+b2.w-16),P2.Y(tr.a*te)); }
+  if(r){ curve(P1,r.a,r.t,'x','#ffc46b',3); curve(P2,r.a,r.t,'v','#ff9f43',3);
+    g.fillStyle='#ffd166'; g.beginPath(); g.arc(P1.X(r.t),P1.Y(0.5*r.a*r.t*r.t),4,0,Math.PI*2); g.arc(P2.X(r.t),P2.Y(r.a*r.t),4,0,Math.PI*2); g.fill();
+    if(r.done){ const t1=r.tEnd*0.3, t2=r.tEnd*0.85, v1=r.a*t1, v2=r.a*t2;
+      g.strokeStyle='#ff6b6b'; g.lineWidth=1.6; g.setLineDash([4,3]); g.beginPath(); g.moveTo(P2.X(t1),P2.Y(v1)); g.lineTo(P2.X(t2),P2.Y(v1)); g.lineTo(P2.X(t2),P2.Y(v2)); g.stroke(); g.setLineDash([]);
+      label(g,'Δt',(P2.X(t1)+P2.X(t2))/2,P2.Y(v1)+10,{size:11,color:'#c792ff'}); label(g,'Δv',P2.X(t2)+4,(P2.Y(v1)+P2.Y(v2))/2,{align:'left',size:11,color:'#ff9f43'});
+      label(g,`slope = a = ${f2(r.a)} m/s²`,b2.x+b2.w-4,b2.y+12,{align:'right',size:12,color:'#ff6b6b'}); } }
+}
+/* ----- stage 2 check questions ----- */
+const S2Q=[
+  {q:'In Task A the total mass stayed the same while you moved masses onto the hanger. As the pulling force got bigger, what happened to the acceleration?',
+   o:['It got smaller','It got bigger','It stayed the same'],c:1,why:'Same mass, bigger force: bigger acceleration.',hint:'Look at your Task A table. Compare the F column with the a column.'},
+  {q:'In Task B the pulling force stayed the same while you added blocks to the cart. As the mass got bigger, what happened to the acceleration?',
+   o:['It got bigger','It stayed the same','It got smaller'],c:2,why:'Same force, more mass: smaller acceleration.',hint:'Look at your Task B table. Compare the m column with the a column.'},
+  {q:'In Task A, why did the total mass stay the same even though the hanger got heavier?',
+   o:['Mass on the hanger doesn’t count, because it isn’t on the cart','The masses only moved from the cart to the hanger, and the hanger moves too, so they’re still part of what gets sped up','The cart got lighter, so the total mass went down'],c:1,
+   why:'The cart, its load and the hanger all speed up together, so they all count in the total mass.',hint:'Does the hanger speed up when the cart does?'},
+  {q:'Which change would make the cart’s acceleration bigger?',
+   o:['Add a block to the cart','Move a mass from the hanger to the cart','Move a mass from the cart to the hanger'],c:2,
+   why:'That raises the pulling force without changing the total mass, just like Task A.',hint:'Which choice makes the force bigger without adding mass?'}];
+function renderS2Q(){
+  const el=$('#s2q'); const all=S2Q.every((q,i)=>S.s2.q[i]===q.c);
+  el.innerHTML=`<h2>✍️ Check questions · answer all ${S2Q.length} correctly</h2><p class="small">Use your two data tables. You can try again if you miss one.</p><div class="qlist">${S2Q.map((q,i)=>{ const a=S.s2.q[i], done=a===q.c;
+    return `<div class="q ${done?'done':''}"><div class="qt">${i+1}. ${q.q}</div><div class="opts">${q.o.map((o,j)=>`<button class="opt ${a===j?(j===q.c?'right':'wrong'):''}" data-q="${i}" data-o="${j}" ${done?'disabled':''}>${o}</button>`).join('')}</div>
+      ${a===undefined?'':done?`<div class="fb good">✅ ${q.why}</div>`:`<div class="fb bad">Not quite. ${q.hint}</div>`}</div>`; }).join('')}</div>
+    ${all?`<div class="found"><h3>Stage 2 cleared! What you found out</h3><ul><li>With the <b>mass</b> held the same, a bigger <span class="vF">force</span> gives a bigger <span class="va">acceleration</span>.</li><li>With the <b>force</b> held the same, a bigger <span class="vm">mass</span> gives a smaller <span class="va">acceleration</span>.</li></ul>Next you'll find out exactly <i>how much</i> bigger and smaller.<div class="row" style="margin-top:8px"><button class="btn" id="s2next">Go to Stage 3 →</button></div></div>`:''}`;
+}
+$('#s2q').addEventListener('click',e=>{
+  if(e.target.closest('#s2next')){ showStage(3); return; }
+  const b=e.target.closest('.opt'); if(!b||b.disabled) return; const i=+b.dataset.q, j=+b.dataset.o; S.s2.q[i]=j;
+  if(!S.s2.cleared && S2Q.every((q,k)=>S.s2.q[k]===q.c)){ S.s2.cleared=true; renderTabs(); }
+  save(); renderS2Q(); renderS2Tabs(); });
+function renderS2Tabs(){ const t=S.s2.task; $$('#s2tabs .stab').forEach(b=>{ if(b.dataset.t==='Q') b.querySelector('.sm').textContent=S.s2.cleared?'✅':''; }); }
+
+/* =====================================================================
+   STAGE 3 — find the law
+   ===================================================================== */
+const C3=Canvas('#cv3');
+function sampleA(){ return [...Array(NDISC+1).keys()].map((n,i)=>{ const c=cfgA(n); return {id:i+1,n,mh:c.mh,load:c.load,M:c.M,F:c.F,a:c.F/c.M}; }); }
+function sampleB(){ return [...Array(NBLOCK+1).keys()].map((k,i)=>{ const c=cfgB(k); return {id:i+1,n:k,mh:c.mh,load:c.load,M:c.M,F:c.F,a:c.F/c.M}; }); }
+const dataA=()=>S.s2.A.length>=2?S.s2.A:sampleA(), dataB=()=>S.s2.B.length>=2?S.s2.B:sampleB();
+const usingSample=()=>S.s2.A.length<2||S.s2.B.length<2;
+const rd=v=>Math.round(v*100)/100;
+function pickTrial(list,by){ const s=[...list].sort((a,b)=>a[by]-b[by]); return s[Math.max(0,Math.floor((s.length-1)*0.66))]; }
+function s3Prob(){ if(!S.s3.prob){ const m=pick([0.8,1.2,1.5,2.0,2.5,3.2,4.0]), F=pick([2.0,3.0,4.0,4.8,6.0,7.2,9.0,12.0]); S.s3.prob={F,m}; save(); } return S.s3.prob; }
+function S3STEPS(){
+  const A=dataA(), B=dataB(), MA=A[0].M, FB=B[0].F;
+  const tA=pickTrial(A,'F'), tB=pickTrial(B,'M');
+  const slopeA=1/MA, pr=s3Prob();
+  return [
+  {part:'Part 1 · Force',view:'aF',type:'mc',
+   prompt:`This is your <b>Task A</b> data: <span class="va">acceleration a</span> going up, <span class="vF">pulling force F</span> going across. The total mass was <b class="vm">${f2(MA)} kg</b> for every trial. What shape do the points make?`,
+   o:['A straight line that goes through (0, 0)','A straight line that misses (0, 0)','A curve that bends upward','A curve that bends downward'],c:0,
+   hint:'Imagine laying a ruler on the points. Where does it cross the a axis?',
+   explain:`Right. The points line up, and the line goes back to (0, 0): <b>no force means no acceleration</b>. A straight line through the origin means <span class="va">a</span> is <b>proportional</b> to <span class="vF">F</span>: double the force and the acceleration doubles.`},
+  {part:'Part 1 · Force',view:'aF',type:'num',ans:rd(tA.a)/rd(tA.F),unit:'1/kg',
+   prompt:`If <span class="va">a</span> is proportional to <span class="vF">F</span>, then <b>a ÷ F</b> should come out the same for every trial. Try one. Trial #${tA.id} has <span class="vF">F = ${f2(tA.F)} N</span> and <span class="va">a = ${f2(tA.a)} m/s²</span>. What is <b>a ÷ F</b>?`,
+   wrong:x=>near(x,rd(tA.F)/rd(tA.a))?'That’s F ÷ a. Divide the other way: a ÷ F.':near(x,rd(tA.a)*rd(tA.F))?'You multiplied. Divide a by F instead.':'Divide the acceleration by the force.',
+   explain:`Yes! The table now shows a ÷ F for every trial, and they all come out about <b>${f2(slopeA)}</b>. That constant is the <b>slope</b> of the straight line on your graph.`},
+  {part:'Part 1 · Force',view:'aF',type:'mc',
+   prompt:`Your slope is a ÷ F = <b>${f2(slopeA)}</b>. Now flip it over: 1 ÷ ${f2(slopeA)} = <b class="vm">${f2(MA)} kg</b>. Which mass in your experiment is ${f2(MA)} kg?`,
+   o:['The hanging mass','The cart and its load','The total mass of everything that moves (cart + load + hanger)','It doesn’t match any mass in the experiment'],c:2,
+   hint:'Look at the Total m column in your Task A table.',
+   explain:`So the slope is <b>1 ÷ m</b>, and the line says <span class="va">a</span> = (1 ÷ <span class="vm">m</span>) × <span class="vF">F</span>. That is the same as <span class="va">a</span> = <span class="vF">F</span> ÷ <span class="vm">m</span>, where m is the mass of <b>everything</b> that speeds up.`},
+  {part:'Part 2 · Mass',view:'am',type:'mc',
+   prompt:`Now your <b>Task B</b> data. The pulling force was <b class="vF">${f2(FB)} N</b> every time, and the <span class="vm">total mass m</span> changed. What shape do the points make?`,
+   o:['A straight line going down','A straight line going up','A curve: a drops quickly at first, then levels off','No pattern at all'],c:2,
+   hint:'Do the gaps between points get smaller as m gets bigger?',
+   explain:`Right. As <span class="vm">m</span> gets bigger, <span class="va">a</span> gets smaller, but not along a straight line. Each extra 200 g slows the cart less than the one before. Curves are hard to read exactly, so let's test a guess.`},
+  {part:'Part 2 · Mass',view:'am',type:'num',ans:rd(tB.a)*rd(tB.M),unit:'N',
+   prompt:`Here's a guess: maybe <b>doubling the mass halves the acceleration</b>. If so, then <b>a × m</b> should come out the same for every trial. Try one. Trial #${tB.id} has <span class="vm">m = ${f2(tB.M)} kg</span> and <span class="va">a = ${f2(tB.a)} m/s²</span>. What is <b>a × m</b>?`,
+   wrong:x=>near(x,rd(tB.a)/rd(tB.M))?'You divided. Multiply a by m instead.':near(x,rd(tB.M)/rd(tB.a))?'You divided. Multiply a by m instead.':'Multiply the acceleration by the total mass.',
+   explain:`Every trial gives about the same a × m ≈ <b>${f2(FB)}</b>, and <b class="vF">${f2(FB)} N</b> is the pulling force! So <span class="va">a</span> × <span class="vm">m</span> = <span class="vF">F</span>, which means <span class="va">a</span> = <span class="vF">F</span> ÷ <span class="vm">m</span> again.`},
+  {part:'Part 2 · Mass',view:'ainv',type:'mc',
+   prompt:`<b>Why plot a against 1 ÷ m?</b> A curve is hard to check by eye, but a straight line is easy. If <span class="va">a</span> = <span class="vF">F</span> × (1 ÷ <span class="vm">m</span>), then a graph of <span class="va">a</span> against <b>1 ÷ m</b> should be a straight line through (0, 0), with slope <span class="vF">F</span>. Changing what you plot to turn a curve into a straight line is called <i>linearizing</i>.<br><br>The table now has a 1 ÷ m column, and the graph shows a vs. 1 ÷ m. What shape do the points make now?`,
+   o:['Still a curve','A straight line through (0, 0)','A straight line that misses (0, 0)'],c:1,
+   hint:'Lay a ruler on the new graph. Does it pass through the origin?',
+   explain:`The curve became a straight line through the origin, so <span class="va">a</span> is proportional to <b>1 ÷ m</b>. Its slope is about <b class="vF">${f2(FB)} N</b>: the pulling force, just as the guess said. Use the buttons above the graph to flip between the curve and the straight line.`},
+  {part:'Part 3 · The law',view:'ainv',type:'mc',
+   prompt:'Put both experiments together. <span class="va">a</span> is proportional to <span class="vF">F</span> (Task A) and proportional to 1 ÷ <span class="vm">m</span> (Task B). Which equation matches both?',
+   o:['a = F × m','a = F ÷ m','a = m ÷ F','a = F + m'],c:1,
+   hint:'Bigger F should make a bigger. Bigger m should make a smaller.',
+   explain:`<div class="eqbig"><span class="va">a</span> = <span class="vF">F</span> ÷ <span class="vm">m</span></div>This is <b>Newton's second law</b>. A bigger net force gives a bigger acceleration; a bigger mass gives a smaller one. You'll often see it written as <span class="vF">F</span> = <span class="vm">m</span><span class="va">a</span>.`},
+  {part:'Part 3 · The law',view:'ainv',type:'num',ans:pr.F/pr.m,unit:'m/s²',
+   prompt:`Try it. A cart system with a total mass of <b class="vm">${pr.m.toFixed(1)} kg</b> is pulled by a net force of <b class="vF">${pr.F.toFixed(1)} N</b>. What is its acceleration?`,
+   wrong:x=>near(x,pr.F*pr.m)?'You multiplied. Use a = F ÷ m.':near(x,pr.m/pr.F)?'That’s m ÷ F. Flip it: a = F ÷ m.':'Use a = F ÷ m.',
+   explain:`<span class="va">a</span> = ${pr.F.toFixed(1)} N ÷ ${pr.m.toFixed(1)} kg = <b class="va">${f2(pr.F/pr.m)} m/s²</b>.`}];
+}
+function s3Progress(){ return S.s3.cleared?99:S.s3.step+(S.s3.solved?1:0); }
+function s3ViewsAllowed(){ const p=s3Progress(); return {aF:true, am:p>=3, ainv:p>=5}; }
+function renderS3(){
+  const steps=S3STEPS(), i=Math.min(S.s3.step,steps.length-1), st=steps[i], p=s3Progress();
+  if(!U.s3.viewSet||U.s3.viewStep!==i){ U.s3.view=st.view; U.s3.viewStep=i; U.s3.viewSet=true; }
+  const al=s3ViewsAllowed();
+  $('#s3views').innerHTML=[['aF','a vs F (Task A)'],['am','a vs m (Task B)'],['ainv','a vs 1 ÷ m (Task B)']].map(([k,t])=>`<button class="vbtn ${U.s3.view===k?'sel':''}" data-v="${k}" ${al[k]?'':'disabled'}>${t}</button>`).join('');
+  let pips=''; for(let k=0;k<steps.length;k++) pips+=`<span class="sp ${k<i||S.s3.cleared||(k===i&&S.s3.solved)?'on':k===i?'cur':''}"></span>`;
+  let h=`<h2>Step ${i+1} of ${steps.length}</h2><div class="steppips">${pips}</div><div class="part">${st.part}</div><div class="prompt">${st.prompt}</div>`;
+  if(st.type==='mc'){
+    h+=`<div class="opts">${st.o.map((o,j)=>`<button class="opt ${S.s3.solved&&j===st.c?'right':U.s3.fb&&U.s3.fb.j===j?'wrong':''}" data-o="${j}" ${S.s3.solved?'disabled':''}>${o}</button>`).join('')}</div>`;
+  } else {
+    h+=`<div class="numrow"><input class="field" id="s3in" inputmode="decimal" autocomplete="off" placeholder="?" ${S.s3.solved?'disabled':''} value="${S.s3.solved?esc(S.s3.lastIn||''):''}"><span class="small" style="margin:0">${st.unit}</span>
+      <button class="btn" id="s3chk" ${S.s3.solved?'disabled':''}>Check</button></div>`;
+  }
+  if(!S.s3.solved && U.s3.fb) h+=`<div class="fb bad">${U.s3.fb.msg}</div>`;
+  if(S.s3.solved) h+=`<div class="explain">✅ ${st.explain}</div>`;
+  if(S.s3.solved && !S.s3.cleared) h+=`<div class="row" style="margin-top:10px"><button class="btn" id="s3next">${i===steps.length-1?'Finish Stage 3':'Next →'}</button></div>`;
+  if(S.s3.cleared) h+=`<div class="found"><h3>Stage 3 cleared! What you found out</h3><ul><li><span class="va">a</span> is proportional to <span class="vF">F</span> when the mass stays the same.</li><li><span class="va">a</span> is proportional to 1 ÷ <span class="vm">m</span> when the force stays the same.</li><li>Together: <b><span class="va">a</span> = <span class="vF">F</span> ÷ <span class="vm">m</span></b>, Newton's second law. Here m is the mass of everything that speeds up.</li></ul>
+      <div class="row"><button class="btn" id="s3go4">Go to Race Day →</button></div><p class="small" style="margin-top:6px">Use the buttons above the graph to look at any of the three graphs again.</p></div>`;
+  if(usingSample()) h+=`<p class="small" style="margin-top:8px">Teacher preview: Stage 2 wasn't finished on this device, so these are sample data.</p>`;
+  $('#s3step').innerHTML=h;
+  renderS3Table(p);
+  const inp=$('#s3in'); if(inp&&!S.s3.solved) inp.addEventListener('keydown',e=>{ if(e.key==='Enter') s3Check(); });
+}
+function renderS3Table(p){
+  const v=U.s3.view;
+  if(v==='aF'){ const A=[...dataA()].sort((a,b)=>a.F-b.F), showR=p>=2;
+    $('#s3ttitle').textContent='Task A data · same total mass';
+    $('#s3log').innerHTML=`<table><thead><tr><th>#</th><th><span class="vm">m</span> (kg)</th><th><span class="vF">F</span> (N)</th><th><span class="va">a</span> (m/s²)</th>${showR?'<th>a ÷ F</th>':''}</tr></thead><tbody>${A.map(r=>`<tr><td>${r.id}</td><td class="vm">${f2(r.M)}</td><td class="vF">${f2(r.F)}</td><td class="va">${f2(r.a)}</td>${showR?`<td>${f2(rd(r.a)/rd(r.F))}</td>`:''}</tr>`).join('')}</tbody></table>`;
+  } else { const B=[...dataB()].sort((a,b)=>a.M-b.M), showP=p>=5, showI=p>=5;
+    $('#s3ttitle').textContent='Task B data · same force';
+    $('#s3log').innerHTML=`<table><thead><tr><th>#</th><th><span class="vF">F</span> (N)</th><th><span class="vm">m</span> (kg)</th>${showI?'<th>1 ÷ m (1/kg)</th>':''}<th><span class="va">a</span> (m/s²)</th>${showP?'<th>a × m</th>':''}</tr></thead><tbody>${B.map(r=>`<tr><td>${r.id}</td><td class="vF">${f2(r.F)}</td><td class="vm">${f2(r.M)}</td>${showI?`<td>${f2(1/r.M)}</td>`:''}<td class="va">${f2(r.a)}</td>${showP?`<td>${f2(rd(r.a)*rd(r.M))}</td>`:''}</tr>`).join('')}</tbody></table>`; }
+  $('#s3note').textContent='Sorted from smallest to largest. # is the trial number from Stage 2.';
+}
+function s3Check(){ const steps=S3STEPS(), st=steps[S.s3.step]; const inp=$('#s3in'); if(!inp) return; const x=parseNum(inp.value);
+  if(!isFinite(x)){ U.s3.fb={msg:'Type a number first.'}; renderS3(); return; }
+  if(near(x,st.ans,0.03,0.011)){ S.s3.solved=true; S.s3.lastIn=inp.value; U.s3.fb=null; save(); renderS3(); }
+  else { U.s3.fb={msg:`Not quite. ${st.wrong(x)}`}; renderS3(); const n=$('#s3in'); if(n){ n.value=inp.value; } } }
+$('#st3').addEventListener('click',e=>{
+  const vb=e.target.closest('.vbtn'); if(vb&&!vb.disabled){ U.s3.view=vb.dataset.v; renderS3(); return; }
+  const o=e.target.closest('.opt'); if(o&&!o.disabled){ const st=S3STEPS()[S.s3.step], j=+o.dataset.o;
+    if(j===st.c){ S.s3.solved=true; U.s3.fb=null; save(); } else U.s3.fb={j,msg:`Not quite. ${st.hint}`}; renderS3(); return; }
+  if(e.target.closest('#s3chk')){ s3Check(); return; }
+  if(e.target.closest('#s3next')){ const n=S3STEPS().length; if(S.s3.step>=n-1){ S.s3.cleared=true; save(); renderTabs(); renderS3(); return; }
+    S.s3.step++; S.s3.solved=false; U.s3.fb=null; save(); renderS3(); return; }
+  if(e.target.closest('#s3go4')){ showStage(4); return; }
+});
+function drawS3(){
+  const c=C3; if(!c.fit()) return; const g=c.g, W=c.W, H=c.H; g.fillStyle='#0a1024'; g.fillRect(0,0,W,H);
+  const v=U.s3.view, p=s3Progress();
+  const A=dataA(), B=dataB();
+  const pts=v==='aF'?A.map(t=>[t.F,t.a]):v==='am'?B.map(t=>[t.M,t.a]):B.map(t=>[1/t.M,t.a]);
+  const xm=niceMax(Math.max(...pts.map(q=>q[0]))*1.12,5), ym=niceMax(Math.max(...pts.map(q=>q[1]))*1.15,5);
+  const box={x:58,y:30,w:W-76,h:H-80};
+  const xl=v==='aF'?'Force F (N)':v==='am'?'Total mass m (kg)':'1 ÷ m (1/kg)', xc=v==='aF'?'#7cc4ff':'#4cd98a';
+  const P=plotFrame(g,box,{xMax:xm.max,xStep:xm.step,yMax:ym.max,yStep:ym.step,xLabel:xl,xColor:xc,yLabel:'Acceleration a (m/s²)',yColor:'#ff6b6b',yLabW:40});
+  const title=v==='aF'?`a vs F · Task A (total mass ${f2(A[0].M)} kg)`:v==='am'?`a vs m · Task B (force ${f2(B[0].F)} N)`:`a vs 1 ÷ m · Task B (force ${f2(B[0].F)} N)`;
+  label(g,title,box.x,14,{align:'left',size:13,bg:false,color:'#eaf0ff'});
+  const sxy=pts.reduce((s,q)=>s+q[0]*q[1],0), sxx=pts.reduce((s,q)=>s+q[0]*q[0],0), k=sxy/sxx;
+  const showFit=(v==='aF'&&p>=1)||(v==='ainv'&&p>=6);
+  if(showFit){ const xe=Math.min(xm.max,ym.max/k); g.strokeStyle='rgba(255,107,107,.85)'; g.lineWidth=2; g.setLineDash([7,5]); g.beginPath(); g.moveTo(P.X(0),P.Y(0)); g.lineTo(P.X(xe),P.Y(k*xe)); g.stroke(); g.setLineDash([]);
+    label(g,v==='aF'?`best-fit line · slope = ${f2(k)} (1/kg)`:`best-fit line · slope = ${f2(k)} N`,box.x+box.w-6,box.y+box.h-14,{align:'right',size:12,color:'#ff6b6b'}); }
+  if(v==='am'&&p>=5){ const F=B[0].F; g.strokeStyle='rgba(255,107,107,.75)'; g.lineWidth=2; g.setLineDash([7,5]); g.beginPath(); let first=true;
+    for(let i=0;i<=80;i++){ const m=0.05+(xm.max-0.05)*i/80, a=F/m; if(a>ym.max) continue; const X=P.X(m),Y=P.Y(a); first?g.moveTo(X,Y):g.lineTo(X,Y); first=false; } g.stroke(); g.setLineDash([]);
+    label(g,`curve a = ${f2(F)} N ÷ m`,box.x+box.w-6,box.y+14,{align:'right',size:12,color:'#ff6b6b'}); }
+  for(const q of pts){ g.fillStyle='#ffd166'; g.strokeStyle='#0f1830'; g.lineWidth=2; g.beginPath(); g.arc(P.X(q[0]),P.Y(q[1]),6,0,Math.PI*2); g.fill(); g.stroke(); }
+}
+
+/* =====================================================================
+   STAGE 4 — race day
+   ===================================================================== */
+const C4=Canvas('#cv4');
+const BOX2={x0:-0.1,x1:1.26,y0:-0.95,y1:0.40};
+const RACE_CART=500;
+let RACE_POOL=null;
+function racePool(){ if(RACE_POOL) return RACE_POOL; const C=[]; for(let k=0;k<=8;k++) for(let n=0;n<=5;n++){ const mh=50+50*n, load=RACE_CART+100*k; C.push({k,n,mh,load,M:mh+load}); }
+  const P={tie:[],dist:[],cart:[],mixed:[]};
+  for(let i=0;i<C.length;i++) for(let j=i+1;j<C.length;j++){ const A=C[i],B=C[j], l=A.mh*B.M, r=B.mh*A.M, ratio=Math.max(l,r)/Math.min(l,r);
+    if(l===r) P.tie.push([A,B]);
+    else if(A.M===B.M&&ratio>=1.15) P.dist.push([A,B]);
+    else if(A.mh===B.mh&&ratio>=1.15) P.cart.push([A,B]);
+    else if(A.mh!==B.mh&&A.M!==B.M&&ratio>=1.12&&ratio<=1.9) P.mixed.push([A,B]); }
+  RACE_POOL=P; return P; }
+function genRace(){ const P=racePool(); const last=S.s4.log[0];
+  let type; do{ const r=Math.random(); type=r<0.2?'tie':r<0.45?'dist':r<0.65?'cart':'mixed'; } while(type==='tie'&&last&&last.type==='tie');
+  const [x,y]=pick(P[type]); const [A,B]=Math.random()<0.5?[x,y]:[y,x]; return {type,A,B}; }
+const raceAcc=L=>L.mh/1000*G/(L.M/1000);
+function raceWinner(r){ const l=r.A.mh*r.B.M, rr2=r.B.mh*r.A.M; return l>rr2?'A':l<rr2?'B':'T'; }
+function s4Advance(){
+  if(S.s4.done||S.s4.reset){ S.s4.right=0; S.s4.wrong=0; S.s4.series++; S.s4.done=false; S.s4.reset=false; }
+  U.s4.run=null; S.s4.race=genRace(); S.s4.pick=null; S.s4.raced=false; save(); $('#s4panel').classList.remove('show'); }
+function renderS4(){
+  if(S.s4.raced&&!U.s4.run) s4Advance();
+  if(!S.s4.race){ S.s4.race=genRace(); S.s4.pick=null; save(); }
+  const r=S.s4.race, run=U.s4.run, busy=!!run;
+  let pips=''; for(let i=0;i<RACE_WINS;i++) pips+=`<span class="pip ${i<S.s4.right?'on':''}">${i<S.s4.right?'✓':''}</span>`;
+  let miss=''; for(let i=0;i<=RACE_MAX_MISS;i++) miss+=`<span class="pip ${i<S.s4.wrong?'miss':''}">${i<S.s4.wrong?'✗':''}</span>`;
+  const credit=S.earned?`<div class="credit">✅ You've already earned credit${S.name?`, ${esc(S.name.split(/\s+/)[0])}`:''}. <a id="s4again">Get my code again</a></div>`:'';
+  $('#s4card').innerHTML=`${credit}<h2>Race ${S.s4.right+S.s4.wrong+1} · get ${RACE_WINS} right before ${RACE_MAX_MISS+1} wrong</h2>
+    <div class="pips" style="margin-bottom:8px">Right ${pips}<span style="width:12px"></span>Misses ${miss}</div>
+    <div class="setups"><div class="setup A"><div class="nm">🅰 Cart A</div><div class="ln">Cart + load: <b>${r.A.load} g</b><br>Hanging: <b>${r.A.mh} g</b></div></div>
+      <div class="setup B"><div class="nm">🅱 Cart B</div><div class="ln">Cart + load: <b>${r.B.load} g</b><br>Hanging: <b>${r.B.mh} g</b></div></div></div>
+    <div class="small" style="margin-bottom:4px">Both carts roll ${D} m on frictionless tracks. Which reaches the stop first?</div>
+    <div class="picks">${[['A','🅰 A wins'],['T','🤝 Tie'],['B','🅱 B wins']].map(([k,t])=>`<button class="pickb ${S.s4.pick===k?'on':''}" data-k="${k}" ${busy?'disabled':''}>${t}</button>`).join('')}</div>
+    <button class="btn go" id="raceGo" style="width:100%" ${(!S.s4.pick||busy)?'disabled':''}>🏁 Lock in &amp; race!</button>`;
+  renderS4Log();
+}
+function renderS4Log(){
+  const L=S.s4.log; if(!L.length){ $('#s4log').innerHTML='<div class="empty">No races yet.</div>'; $('#s4note').textContent=''; return; }
+  const W={A:'A',B:'B',T:'Tie'};
+  $('#s4log').innerHTML=`<table><thead><tr><th>#</th><th>A cart/hang (g)</th><th>B cart/hang (g)</th><th>a<sub>A</sub></th><th>a<sub>B</sub></th><th>Pick</th><th>Result</th><th></th></tr></thead><tbody>${L.map(x=>`<tr><td>${x.n}</td><td>${x.A}</td><td>${x.B}</td><td class="va">${f2(x.aA)}</td><td class="va">${f2(x.aB)}</td><td>${W[x.pick]}</td><td>${W[x.win]}</td><td>${x.ok?'✅':'❌'}</td></tr>`).join('')}</tbody></table>`;
+  $('#s4log').scrollTop=0;
+  $('#s4note').textContent=`${L.length} race${L.length>1?'s':''}${L.length>6?' · scroll down for earlier ones':''} · a in m/s²`;
+}
+$('#s4card').addEventListener('click',e=>{
+  if(e.target.closest('#s4again')){ openName(); return; }
+  const b=e.target.closest('.pickb'); if(b&&!b.disabled){ S.s4.pick=b.dataset.k; save(); renderS4(); return; }
+  if(e.target.closest('#raceGo')){ if(!S.s4.pick||U.s4.run) return; const r=S.s4.race, aA=raceAcc(r.A), aB=raceAcc(r.B);
+    U.s4.run={t:0,aA,aB,tA:Math.sqrt(2*D/aA),tB:Math.sqrt(2*D/aB),done:false}; $('#s4panel').classList.remove('show'); renderS4(); }
+});
+function stepS4(dt){ const R=U.s4.run; if(!R||R.done) return; R.t+=dt*U.speed; if(R.t>=Math.max(R.tA,R.tB)+0.15){ R.t=Math.max(R.tA,R.tB)+0.15; s4Finish(); } }
+function s4Finish(){
+  const R=U.s4.run; R.done=true; S.s4.raced=true; const r=S.s4.race, win=raceWinner(r), ok=S.s4.pick===win;
+  if(ok) S.s4.right++; else S.s4.wrong++;
+  S.s4.log.unshift({n:S.s4.log.length+1,type:r.type,A:`${r.A.load}/${r.A.mh}`,B:`${r.B.load}/${r.B.mh}`,aA:R.aA,aB:R.aB,pick:S.s4.pick,win,ok});
+  const wtxt={A:'Cart A wins!',B:'Cart B wins!',T:"It's a tie!"}[win];
+  const line=(nm,L,a,t)=>`<b>${nm}:</b> <span class="vm">m</span> = ${L.load} g + ${L.mh} g = <b class="vm">${f2(L.M/1000)} kg</b>; <span class="vF">F</span> = ${f2(L.mh/1000)} kg × 9.8 = <b class="vF">${f2(L.mh/1000*G)} N</b>;<br><span class="va">a</span> = ${f2(L.mh/1000*G)} ÷ ${f2(L.M/1000)} = <b class="va">${f2(a)} m/s²</b> (${f2(t)} s)`;
+  let h=`<div class="banner ${ok?'good':'bad'}">${ok?'✅ Right!':'❌ Not this time.'} ${wtxt}</div><div class="worked">${line('A',r.A,R.aA,R.tA)}<br>${line('B',r.B,R.aB,R.tB)}</div>`;
+  if(win==='T') h+=`<div class="small">Same <span class="va">a</span>: one cart has more force, but exactly as much more mass to go with it.</div>`;
+  else if(r.type==='dist') h+=`<div class="small">Same total mass, so the cart with more weight on the hanger has more force.</div>`;
+  else if(r.type==='cart') h+=`<div class="small">Same pulling force, so the cart system with less total mass speeds up more.</div>`;
+  let btn='Next race →';
+  const allDone=S.s1.cleared&&S.s2.cleared&&S.s3.cleared;
+  if(S.s4.right>=RACE_WINS){ S.s4.cleared=true; S.winMisses=S.s4.wrong;
+    h+=allDone?`<div class="banner good">🏆 ${RACE_WINS} right! Race Day is cleared.</div>`:`<div class="banner info">🏆 ${RACE_WINS} right! (Teacher preview: students get a code here once every stage is cleared.)</div>`;
+    btn='Start a new series'; S.s4.done=true; }
+  else if(S.s4.wrong>RACE_MAX_MISS){ h+=`<div class="banner bad">${RACE_MAX_MISS+1} misses, so the series starts over. You've got this: work out m, F and a for each cart.</div>`; btn='Start a new series'; S.s4.reset=true; }
+  h+=`<div class="row" style="margin-top:6px"><button class="btn small" id="s4next">${btn}</button></div>`;
+  save(); $('#s4panel').innerHTML=h; $('#s4panel').classList.add('show'); renderTabs(); renderS4();
+  if(S.s4.done&&allDone){ setTimeout(()=>{ if(!S.earned) openName(); },700); }
+}
+$('#s4panel').addEventListener('click',e=>{ if(!e.target.closest('#s4next')) return;
+  s4Advance(); renderS4(); });
+function drawS4(){
+  const c=C4; if(!c.fit()) return; const r=S.s4.race; if(!r) return; const R=U.s4.run;
+  const dA=R?0.5*R.aA*R.t*R.t:0, dB=R?0.5*R.aB*R.t*R.t:0;
+  const lane=(L,y,px,disp,color,letter,side,tc)=>({y,px,disp,color,letter,cartDiscs:0,hangDiscs:L.n,blocks:L.k,blockCols:4,blockW:0.045,blockH:0.026,mh:L.mh,labelSide:side,textColor:tc});
+  drawRig(c,BOX2,[lane(r.A,0.20,0.80,dA,'#2fa3ff','A','left','#a9d3ff'),lane(r.B,0,0.98,dB,'#ff8a3d','B','right','#ffc8a0')],{twoLane:true});
+  const g=c.g;
+  if(!R) label(g,S.s4.pick?'Press 🏁 Lock in & race!':'Make your prediction →',10,14,{align:'left',size:12,color:'#ffd166'});
+  else{ label(g,`t = ${f2(Math.min(R.t,Math.max(R.tA,R.tB)))} s`,10,14,{align:'left',size:13,color:'#c792ff'});
+    if(R.t>=R.tA) label(g,`A done: ${f2(R.tA)} s`,10,34,{align:'left',size:12,color:'#a9d3ff'});
+    if(R.t>=R.tB) label(g,`B done: ${f2(R.tB)} s`,10,54,{align:'left',size:12,color:'#ffc8a0'}); }
+}
+
+/* =====================================================================
+   COMPLETION CODE + TURN-IN
+   ===================================================================== */
+function letter(c){ c=(c||'').toUpperCase(); return /[A-Z]/.test(c)?c:'X'; }
+function initials(name){ const p=name.trim().split(/\s+/).filter(Boolean);
+  const a=letter((p[0]||'')[0]);
+  const b=letter(p.length>1?(p[p.length-1]||'')[0]:((p[0]||'')[1]||(p[0]||'')[0]));
+  return [a,b]; }
+function makeCode(name){ const [i1,i2]=initials(name);
+  const cs='ABCDEFGHJKMNPQRSTUVWXYZ23456789'; const r=()=>cs[Math.floor(Math.random()*cs.length)];
+  return [r(),r(),i1,r(),r(),i2,r(),r()].join(''); }
+const FORM=(()=>{ if(!FORM_PREFILL_LINK) return null;
+  try{ const u=new URL(FORM_PREFILL_LINK), map={};
+    u.searchParams.forEach((v,k)=>{ if(/^entry\.\d+$/.test(k)) map[v.trim().toUpperCase()]=k; });
+    return {base:u.origin+u.pathname, map}; }catch(e){ return null; } })();
+function ascii(s){ return String(s).replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—−]/g,'-').replace(/\s+/g,' ').trim(); }
+function turnInURL(values){ const q=new URLSearchParams({usp:'pp_url'});
+  Object.entries(values).forEach(([key,val])=>{ if(FORM.map[key]) q.append(FORM.map[key],ascii(String(val))); });
+  return FORM.base+'?'+q.toString(); }
+function openModal(id){ $(id).classList.add('open'); } function closeModal(id){ $(id).classList.remove('open'); }
+function openName(){ $('#nameField').value=S.name||''; $('#nameErr').textContent=''; openModal('#nameModal'); setTimeout(()=>$('#nameField').focus(),50); }
+$('#nameGo').addEventListener('click',()=>{ const v=$('#nameField').value.trim(); const letters=(v.match(/[A-Za-zÀ-ɏ]/g)||[]).length;
+  if(letters<2){ $('#nameErr').textContent='Please enter your first and last name.'; return; }
+  S.name=v; S.code=makeCode(v); S.earned=true; save(); closeModal('#nameModal'); showWin(); });
+$('#nameField').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#nameGo').click(); });
+$('#nameCancel').addEventListener('click',()=>closeModal('#nameModal'));
+function showWin(){
+  $('#winTitle').textContent=`Congratulations, ${S.name.split(/\s+/)[0]}!`; $('#winCode').textContent=S.code;
+  $('#turnInBtn').style.display=FORM?'':'none';
+  $('#winNote').innerHTML=FORM
+    ? 'Tapping <b>Turn it in</b> opens your class form with your name and code already filled in. Just press <b>Submit</b>. (No form opens? Screenshot this page instead.) Your initials are in the <b>3rd</b> and <b>6th</b> spots.'
+    : 'Screenshot this page (or copy the code) and turn it in. Your initials are in the <b>3rd</b> and <b>6th</b> spots.';
+  $('#copyBtn').textContent='Copy code'; renderS4(); openModal('#winModal'); }
+$('#turnInBtn').addEventListener('click',()=>{ if(!FORM) return; window.open(turnInURL({NAME:S.name,CODE:S.code,MISSES:S.winMisses}),'_blank','noopener'); });
+$('#copyBtn').addEventListener('click',async()=>{ const done=()=>{ $('#copyBtn').textContent='Copied ✓'; setTimeout(()=>$('#copyBtn').textContent='Copy code',1600); };
+  try{ await navigator.clipboard.writeText(S.code); done(); }catch(e){ const t=document.createElement('textarea'); t.value=S.code; document.body.appendChild(t); t.select(); try{ document.execCommand('copy'); done(); }catch(e2){} t.remove(); } });
+$('#winClose').addEventListener('click',()=>closeModal('#winModal'));
+
+/* =====================================================================
+   INTRO + TEACHER UNLOCK
+   ===================================================================== */
+$('#helpBtn').addEventListener('click',()=>openModal('#introModal'));
+$('#introGo').addEventListener('click',()=>{ S.seenIntro=true; save(); closeModal('#introModal'); });
+$('#introModal').addEventListener('click',e=>{ if(e.target.id==='introModal'){ S.seenIntro=true; save(); closeModal('#introModal'); } });
+$('#keyBtn').addEventListener('click',()=>{ if(U.teacher){ toast('Teacher unlock is on until this page reloads.'); return; } $('#keyField').value=''; $('#keyErr').textContent=''; openModal('#keyModal'); setTimeout(()=>$('#keyField').focus(),50); });
+$('#keyGo').addEventListener('click',()=>{ if($('#keyField').value.trim()===TEACHER_CODE){ U.teacher=true; $('#keyBtn').textContent='🔓'; closeModal('#keyModal'); toast('All stages unlocked on this device until the page reloads.'); showStage(U.stage); }
+  else $('#keyErr').textContent='That passcode is not right.'; });
+$('#keyField').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#keyGo').click(); });
+$('#keyCancel').addEventListener('click',()=>closeModal('#keyModal'));
+['#keyModal','#nameModal','#winModal'].forEach(id=>$(id).addEventListener('click',e=>{ if(e.target.id===id.slice(1)) closeModal(id); }));
+document.addEventListener('keydown',e=>{ if(e.key===' '&&document.activeElement===document.body){
+  if(U.stage===1&&!U.s1.running){ e.preventDefault(); $('#s1push')&&$('#s1push').click(); }
+  else if(U.stage===2&&$('#s2go')&&!$('#s2go').disabled){ e.preventDefault(); s2Release(); } } });
+
+/* =====================================================================
+   MAIN LOOP
+   ===================================================================== */
+let last=performance.now();
+function frame(now){ const dt=Math.min(0.05,(now-last)/1000); last=now;
+  try{
+    if(U.stage===1){ stepS1(dt); drawS1Scene(); drawS1Graph(); }
+    else if(U.stage===2){ stepS2(dt); drawS2(); }
+    else if(U.stage===3) drawS3();
+    else { stepS4(dt); drawS4(); }
+  }catch(err){ console.error(err); }
+  requestAnimationFrame(frame); }
+if(!unlocked(U.stage)) U.stage=1;
+showStage(U.stage);
+if(!S.seenIntro) openModal('#introModal');
+requestAnimationFrame(frame);
+
+window.__lab={get S(){return S;}, U, cfgA, cfgB, s2Release, s1Answer, S3STEPS, racePool, genRace, raceWinner, makeCode, showStage,
+  reset(){ try{ localStorage.removeItem(KEY); }catch(e){} S=freshState(); save(); location.reload(); },
+  finishRun(){ if(U.s2.run&&!U.s2.run.done){ U.s2.run.t=U.s2.run.tEnd; s2Finish(); } if(U.s4.run&&!U.s4.run.done){ U.s4.run.t=Math.max(U.s4.run.tA,U.s4.run.tB)+0.15; s4Finish(); } if(U.s1.running){ U.s1.t=1; stepS1(0); } }};
+</script>
+</body>
+</html>

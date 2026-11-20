@@ -7,6 +7,7 @@ Browser games and simulations about **forces, impulse, momentum and collisions**
 | App | The big idea |
 |-----|--------------|
 | 🥌 [**Momentum Stones**](momentum-stones/) | Plan pushes (force × time) on frictionless ice to knock stones into or out of a target before the clock runs out. |
+| 🛒 [**Newton's 2nd Law Lab**](newtons-second-law/) | Discover a = F ÷ m: conceptual pushes, a cart-and-pulley lab with live graphs, guided graph analysis, and prediction races. See [its README](newtons-second-law/README.md). |
 
 ---
 
