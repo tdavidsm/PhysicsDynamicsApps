@@ -28,7 +28,7 @@ Students find out how force and mass work together to set acceleration. They sta
 - **Passcode 1253** (🔑) unlocks every stage on that device until the page reloads. It never awards a completion code. If Stage 2 wasn't done, Stage 3 uses sample data and says so.
 - **Randomization:** each device gets a random cart mass (400–600 g), so total masses and accelerations differ between students. The practice problem and all races are random.
 - **Completion:** after the 5th correct race (with Stages 1–3 genuinely cleared), students enter their name and get an 8-character code with their initials in the 3rd and 6th spots. Students who come back later see "You've already earned credit" and a link to get a new code.
-- **Google Form turn-in:** paste the form's pre-filled link into `FORM_PREFILL_LINK` at the top of the script, made with the placeholders `NAME` and `CODE` (and optionally `MISSES`, the misses in the winning series). While it's blank, the **Turn it in** button is hidden and students screenshot or copy their code.
+- **Google Form turn-in:** `FORM_PREFILL_LINK` at the top of the script holds the form's pre-filled link with the placeholders `NAME` and `CODE` (Name → `entry.2072631698`, Code → `entry.1611661514`). **📨 Turn it in** opens the form with both filled in; the student presses Submit. To also collect misses, add a question, pre-fill it with `MISSES`, and paste the new link. If the link is blank, the button hides and students screenshot or copy their code.
 - Other settings at the top of the script: travel distance, mass sizes, trials needed, and race wins and misses.
 - Progress saves on the device (`localStorage` key `newtons-second-law-lab-v1`).
 
