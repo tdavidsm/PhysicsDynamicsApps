@@ -235,6 +235,7 @@
   <div class="spacer"></div>
   <div class="medals" id="medals"></div>
   <button class="hbtn" id="helpBtn">📖 How to play</button>
+  <button class="hbtn" id="resetBtn" hidden>🧹 Start over</button>
   <button class="hbtn" id="keyBtn" aria-label="Teacher unlock">🔑</button>
 </header>
 
@@ -327,6 +328,13 @@
   <input class="field namefield" id="keyField" type="password" inputmode="numeric" autocomplete="off" placeholder="Passcode">
   <div class="err" id="keyErr"></div>
   <div class="row" style="margin-top:8px"><button class="btn" id="keyGo">Unlock</button><button class="btn secondary" id="keyCancel">Cancel</button></div>
+</div></div>
+
+<!-- Start-over confirm modal (teacher only) -->
+<div class="modal" id="resetModal"><div class="modalbox narrow">
+  <h2 style="margin:0 0 8px">🧹 Start over?</h2>
+  <p class="small">This erases all saved progress for this lab on this device: the Stage 1 grid, both Stage 2 data tables, Stage 3 steps, races, and any earned completion code. Other activities aren't affected. This can't be undone.</p>
+  <div class="row" style="margin-top:8px"><button class="btn" id="resetGo" style="background:var(--bad);color:#fff">Erase and start over</button><button class="btn secondary" id="resetCancel">Cancel</button></div>
 </div></div>
 
 <!-- Name modal -->
@@ -1163,11 +1171,14 @@ $('#helpBtn').addEventListener('click',()=>openModal('#introModal'));
 $('#introGo').addEventListener('click',()=>{ S.seenIntro=true; save(); closeModal('#introModal'); });
 $('#introModal').addEventListener('click',e=>{ if(e.target.id==='introModal'){ S.seenIntro=true; save(); closeModal('#introModal'); } });
 $('#keyBtn').addEventListener('click',()=>{ if(U.teacher){ toast('Teacher unlock is on until this page reloads.'); return; } $('#keyField').value=''; $('#keyErr').textContent=''; openModal('#keyModal'); setTimeout(()=>$('#keyField').focus(),50); });
-$('#keyGo').addEventListener('click',()=>{ if($('#keyField').value.trim()===TEACHER_CODE){ U.teacher=true; $('#keyBtn').textContent='🔓'; closeModal('#keyModal'); toast('All stages unlocked on this device until the page reloads.'); showStage(U.stage); }
+$('#keyGo').addEventListener('click',()=>{ if($('#keyField').value.trim()===TEACHER_CODE){ U.teacher=true; $('#keyBtn').textContent='🔓'; $('#resetBtn').hidden=false; closeModal('#keyModal'); toast('All stages unlocked on this device until the page reloads.'); showStage(U.stage); }
   else $('#keyErr').textContent='That passcode is not right.'; });
 $('#keyField').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#keyGo').click(); });
 $('#keyCancel').addEventListener('click',()=>closeModal('#keyModal'));
-['#keyModal','#nameModal','#winModal'].forEach(id=>$(id).addEventListener('click',e=>{ if(e.target.id===id.slice(1)) closeModal(id); }));
+$('#resetBtn').addEventListener('click',()=>{ if(U.teacher) openModal('#resetModal'); });
+$('#resetCancel').addEventListener('click',()=>closeModal('#resetModal'));
+$('#resetGo').addEventListener('click',()=>{ if(!U.teacher) return; try{ localStorage.removeItem(KEY); }catch(e){} S=freshState(); location.reload(); });
+['#keyModal','#nameModal','#winModal','#resetModal'].forEach(id=>$(id).addEventListener('click',e=>{ if(e.target.id===id.slice(1)) closeModal(id); }));
 document.addEventListener('keydown',e=>{ if(e.key===' '&&document.activeElement===document.body){
   if(U.stage===1&&!U.s1.running){ e.preventDefault(); $('#s1push')&&$('#s1push').click(); }
   else if(U.stage===2&&$('#s2go')&&!$('#s2go').disabled){ e.preventDefault(); s2Release(); } } });
